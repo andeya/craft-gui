@@ -1,0 +1,50 @@
+{
+  "name": "craft-ui",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check src/ && next lint",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@assistant-ui/react": "^0.8.20",
+    "@assistant-ui/react-markdown": "^0.8.1",
+    "@assistant-ui/react-ui": "^0.1.8",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2.2.6",
+    "ai": "^4.2.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.487.0",
+    "next": "^15.2.4",
+    "ollama-ai-provider": "^1.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.24.0",
+    "@next/eslint-plugin-next": "^15.2.4",
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.1",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.21.0",
+    "eslint-config-next": "^15.2.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.29.0"
+  }
+}
