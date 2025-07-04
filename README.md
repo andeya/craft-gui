@@ -176,3 +176,18 @@ And to learn more about Tauri, take a look at the following resources:
 - [Tauri Documentation - Guides](https://v2.tauri.app/start/) - learn about the Tauri
   toolkit.
 
+## Q&A
+
+- Clean cache
+
+```shell
+rm -rf .next node_modules .pnpm-store dist src-tauri/gen
+```
+
+- Restart ADB
+
+```shell
+adb kill-server
+adb start-server
+adb devices
+```
