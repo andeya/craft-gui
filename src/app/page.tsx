@@ -1,5 +1,5 @@
-import { MyAssistant } from "@/components/MyAssistant";
 import { Greet } from "@/components/Greet";
+import { MyAssistant } from "@/components/MyAssistant";
 
 export default function Home() {
   return (
