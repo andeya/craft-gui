@@ -181,7 +181,7 @@ And to learn more about Tauri, take a look at the following resources:
 - Clean cache
 
 ```shell
-rm -rf .next node_modules .pnpm-store dist src-tauri/gen
+rm -rf .next node_modules .pnpm-store dist src-tauri/gen src-tauri/target
 ```
 
 - Restart ADB
