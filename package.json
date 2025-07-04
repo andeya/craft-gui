@@ -11,21 +11,21 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2.2.6",
+    "next": "^15.2.4",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss-animate": "^1.0.7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "@assistant-ui/react": "^0.8.20",
     "@assistant-ui/react-markdown": "^0.8.1",
     "@assistant-ui/react-ui": "^0.1.8",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2.2.6",
     "ai": "^4.2.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.487.0",
-    "next": "^15.2.4",
     "ollama-ai-provider": "^1.2.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.2.0",
-    "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.1"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
-import { ollama } from "ollama-ai-provider";
 import { streamText } from "ai";
+import { ollama } from "ollama-ai-provider";
 
 const OLLAMA_MODEL = "llama3.1";
 
