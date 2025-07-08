@@ -1,11 +1,11 @@
-import * as React from "react";
-import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
+import Copyright from "@/components/Copyright";
+import ProTip from "@/components/ProTip";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
-import ProTip from "@/components/ProTip";
-import Copyright from "@/components/Copyright";
+import * as React from "react";
 
 export default function About() {
   return (
@@ -20,7 +20,7 @@ export default function About() {
         }}
       >
         <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-          Material UI - Next.js example in TypeScript
+          Craft UI example
         </Typography>
         <Box sx={{ maxWidth: "sm" }}>
           <Button variant="contained" component={NextLink} href="/">

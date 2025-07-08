@@ -1,13 +1,16 @@
 # Craft UI Template
 
-![Tauri window screenshot](public/ui-screenshot.png)
+This is a [Tauri](https://v2.tauri.app/) project template using [Next.js](https://nextjs.org/), bootstrapped by combining [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) and [`create tauri-app`](https://v2.tauri.app/start/create-project/).
 
-This is a [Tauri](https://v2.tauri.app/) project template using [Next.js](https://nextjs.org/),
-bootstrapped by combining [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app)
-and [`create tauri-app`](https://v2.tauri.app/start/create-project/).
+This template uses [`pnpm`](https://pnpm.io/) as the Node.js dependency manager, and uses the [App Router](https://nextjs.org/docs/app) model for Next.js.
 
-This template uses [`pnpm`](https://pnpm.io/) as the Node.js dependency
-manager, and uses the [App Router](https://nextjs.org/docs/app) model for Next.js.
+<div align="center">
+  <img src="public/ui-screenshot_1.png" alt="Tauri window screenshot 1" style="max-width:1440px; width:100%;" />
+</div>
+
+<div align="center">
+  <img src="public/ui-screenshot_2.png" alt="Tauri window screenshot 2" style="max-width:500px; width:100%;" />
+</div>
 
 ## Template Features
 

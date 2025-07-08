@@ -1,11 +1,12 @@
-import * as React from "react";
+import ModeSwitch from "@/components/ModeSwitch";
+import Navbar from "@/components/Navbar";
+import theme from "@/theme";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
-import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
-import theme from "@/theme";
-import ModeSwitch from "@/components/ModeSwitch";
+import { ThemeProvider } from "@mui/material/styles";
 import localFont from "next/font/local";
+import type * as React from "react";
 // import "@/styles/globals.css";
 
 const geistSansFont = localFont({
@@ -31,6 +32,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider theme={theme}>
             <CssBaseline enableColorScheme />
+            <Navbar />
             <ModeSwitch />
             {props.children}
           </ThemeProvider>

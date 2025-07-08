@@ -1,5 +1,6 @@
 [package]
-name = "wasm_lib"
+# About {name} for App
+name = "craft-ui"
 version = "0.1.0"
 description = "Tauri App WASM"
 edition = "2021"

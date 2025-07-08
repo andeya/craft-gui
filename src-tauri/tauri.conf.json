@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "craft-ui",
+  "productName": "Craft UI",
   "version": "0.1.0",
   "identifier": "com.tauri.craft",
   "build": {
@@ -12,11 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "craft-ui",
-        "width": 800,
-        "height": 600,
+        "title": "Craft UI",
+        "label": "main",
+        "width": 1440,
+        "height": 900,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "center": true,
+        "decorations": true
       }
     ],
     "security": {

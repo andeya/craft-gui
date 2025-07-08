@@ -1,9 +1,10 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useState } from "react";
-import Button from "@mui/material/Button";
-import Box from "@mui/material/Box";
 
 export function Greet() {
   const [greeted, setGreeted] = useState<string | null>(null);
@@ -18,22 +19,15 @@ export function Greet() {
   }, []);
 
   return (
-    <div>
-      <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
+    <div style={{ width: "100%" }}>
+      <Box display="flex" justifyContent="center" alignItems="center" mb={4}>
         <Button onClick={greet} variant="outlined">
           {"Call <greet-fn> from Rust"}
         </Button>
       </Box>
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        component="section"
-        sx={{ p: 2, border: "1px dashed grey" }}
-        mb={2}
-      >
+      <Paper elevation={3} sx={{ mb: 2, width: 440, mx: "auto", p: 4 }}>
         {greeted ?? "Click to invoke the Rust function."}
-      </Box>
+      </Paper>
     </div>
   );
 }
