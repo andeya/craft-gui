@@ -25,7 +25,7 @@ const data = {
   user: {
     name: "shadcn",
     email: "m@example.com",
-    avatar: "/next.svg",
+    avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
     {
@@ -74,7 +74,7 @@ const data = {
       subject: "Re: Project Update",
       date: "Yesterday",
       teaser:
-        "Thanks for the update. The progress looks great so far.\nLet's schedule a call to discuss the next steps.",
+        "Thanks for the update. The progress looks great so far.\nLet's schedule a call to discuss next steps.",
     },
     {
       name: "Bob Johnson",
@@ -82,7 +82,7 @@ const data = {
       subject: "Weekend Plans",
       date: "2 days ago",
       teaser:
-        "Hey everyone! I'm thinking of organizing a team outing this weekend.\nWould you be interested in a hiking trip or a beach day?",
+        "Hey everyone! I'm thinking of organizing a team outing this weekend.\nWould you be interested in hiking trip or beach day?",
     },
     {
       name: "Emily Davis",
@@ -114,7 +114,7 @@ const data = {
       subject: "New Project Idea",
       date: "1 week ago",
       teaser:
-        "I've been brainstorming and came up with an interesting project concept.\nDo you have time this week to discuss its potential impact and feasibility?",
+        "I've been brainstorming and came up with an interesting project concept.\nDo you have time this week to discuss its potential impact feasibility?",
     },
     {
       name: "Olivia Wilson",
@@ -122,7 +122,7 @@ const data = {
       subject: "Vacation Plans",
       date: "1 week ago",
       teaser:
-        "Just a heads up that I'll be taking a two-week vacation next month.\nI'll make sure all my projects are up to date before I leave.",
+        "Just a heads up that I'll be taking two-week vacation next month.\nI'll make sure all my projects are to date before I leave.",
     },
     {
       name: "James Martin",
@@ -130,7 +130,7 @@ const data = {
       subject: "Re: Conference Registration",
       date: "1 week ago",
       teaser:
-        "I've completed the registration for the upcoming tech conference.\nLet me know if you need any additional information from my end.",
+        "I've completed the registration for upcoming tech conference.\nLet me know if you need any additional information from my end.",
     },
     {
       name: "Sophia White",
@@ -153,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      className="overflow-hidden [&>[data-sidebar=sidebar]]:flex-row"
       {...props}
     >
       {/* This is the first sidebar */}
@@ -161,18 +161,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {/* This will make the sidebar appear as icons. */}
       <Sidebar
         collapsible="none"
-        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+        className="!w-[calc(var(--sidebar-width-icon)_+_1px)] border-r"
       >
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
                 <a href="#">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                     <Command className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Acme Inc</span>
+                    <span className="truncate font-semibold">Acme Inc</span>
                     <span className="truncate text-xs">Enterprise</span>
                   </div>
                 </a>
@@ -202,7 +202,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         );
                         setOpen(true);
                       }}
-                      isActive={activeItem.title === item.title}
+                      isActive={activeItem?.title === item.title}
                       className="px-2.5 md:px-2"
                     >
                       <item.icon />
@@ -224,8 +224,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
         <SidebarHeader className="gap-3.5 border-b p-4">
           <div className="flex w-full items-center justify-between">
-            <div className="text-foreground text-base font-medium">
-              {activeItem.title}
+            <div className="text-base font-medium text-neutral-950 dark:text-neutral-50">
+              {activeItem?.title}
             </div>
             <Label className="flex items-center gap-2 text-sm">
               <span>Unreads</span>
@@ -241,14 +241,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <a
                   href="#"
                   key={mail.email}
-                  className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
+                  className="flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
                   <div className="flex w-full items-center gap-2">
-                    <span>{mail.name}</span>{" "}
+                    <span>{mail.name}</span>
+                    {""}
                     <span className="ml-auto text-xs">{mail.date}</span>
                   </div>
                   <span className="font-medium">{mail.subject}</span>
-                  <span className="line-clamp-2 w-[260px] text-xs whitespace-break-spaces">
+                  <span className="line-clamp-2 w-[260px] whitespace-break-spaces text-xs">
                     {mail.teaser}
                   </span>
                 </a>

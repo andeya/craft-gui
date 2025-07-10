@@ -47,12 +47,9 @@ export default function Page() {
         >
           <AppSidebar />
           <SidebarInset>
-            <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4">
+            <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-white p-4 dark:bg-neutral-950">
               <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
+              <Separator orientation="vertical" className="mr-2 h-4" />
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
@@ -69,7 +66,7 @@ export default function Page() {
               {Array.from({ length: 24 }).map((_, index) => (
                 <div
                   key={index}
-                  className="bg-muted/50 aspect-video h-12 w-full rounded-lg"
+                  className="aspect-video h-12 w-full rounded-lg bg-neutral-100/50 dark:bg-neutral-800/50"
                 />
               ))}
             </div>

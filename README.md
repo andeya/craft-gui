@@ -15,15 +15,16 @@ This template uses [`pnpm`](https://pnpm.io/) as the Node.js dependency manager,
 ## Template Features
 
 - TypeScript frontend using [Next.js 15](https://nextjs.org/) React framework
-- [TailwindCSS 4](https://tailwindcss.com/) as a utility-first atomic CSS framework
+- [TailwindCSS@3](https://tailwindcss.com/) as a utility-first atomic CSS framework
   - The example page in this template app has been updated to use only TailwindCSS
   - While not included by default, consider using
     [React Aria components](https://react-spectrum.adobe.com/react-aria/index.html)
     and/or [HeadlessUI components](https://headlessui.com/) for completely unstyled and
     fully accessible UI components, which integrate nicely with TailwindCSS
+- [Shadcn@2.3.0](https://ui.shadcn.com) is a set of beautifully-designed, accessible components and a code distribution platform.
 - Opinionated formatting and linting already setup and enabled
   - [Biome](https://biomejs.dev/) for a combination of fast formatting, linting, and
-    import sorting of TypeScript code, and [ESLint](https://eslint.org/) for any missing
+    import sorting of TypeScript code
     Next.js linter rules not covered by Biome
   - [clippy](https://github.com/rust-lang/rust-clippy) and
     [rustfmt](https://github.com/rust-lang/rustfmt) for Rust code
@@ -115,7 +116,7 @@ respectively for questions pertaining to either technology.
 You can now start adding components to your project.
 
 ```shell
-pnpm dlx shadcn@latest add button
+pnpm dlx shadcn@v2.3.0 add button
 ```
 
 The command above will add the Button component to your project. You can then import it like this:
