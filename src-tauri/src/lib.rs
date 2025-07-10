@@ -1,8 +1,5 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use std::{
-  env,
-  time::{SystemTime, UNIX_EPOCH},
-};
+
 #[allow(unused_imports)]
 use tauri::Manager;
 
@@ -17,7 +14,7 @@ pub fn run() {
       Ok(())
     })
     .plugin(tauri_plugin_opener::init())
-    .invoke_handler(tauri::generate_handler![greet])
+    .invoke_handler(tauri::generate_handler![time_now])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
@@ -27,6 +24,7 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
   init_log();
   #[cfg(debug_assertions)]
   {
+    app.get_webview_window("main").unwrap().open_devtools();
     let app_data_dir = app.app_handle().path().app_data_dir().unwrap();
     log::debug!("app_data_dir={}", app_data_dir.display());
   }
@@ -37,8 +35,8 @@ fn init_log() {
 }
 
 #[tauri::command]
-fn greet() -> String {
-  let now = SystemTime::now();
-  let epoch_ms = now.duration_since(UNIX_EPOCH).unwrap().as_millis();
-  format!("Current timestamp from Rust: {epoch_ms}ms")
+fn time_now() -> String {
+  let now = chrono::Local::now();
+  let formatted_time = now.format("%Y-%m-%d %H:%M:%S").to_string();
+  format!("Rust Time: {formatted_time}")
 }

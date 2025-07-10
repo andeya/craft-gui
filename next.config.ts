@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   distDir: "dist",
+  allowedDevOrigins: ["tauri.localhost"],
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEdgeRuntime } from "@assistant-ui/react";
-import { Thread, makeMarkdownText } from "@assistant-ui/react-ui";
+import { makeMarkdownText, Thread } from "@assistant-ui/react-ui";
 
 const MarkdownText = makeMarkdownText();
 

@@ -1,6 +1,8 @@
+cargo-features = ["profile-rustflags", "trim-paths"]
+
 [package]
 # About {name} for App
-name = "craft-ui"
+name = "Craft-UI"
 version = "0.1.0"
 description = "Tauri App WASM"
 edition = "2021"
@@ -16,16 +18,17 @@ name = "wasm_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.1.1", features = [] }
+tauri-build = { version = "2.3.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.4.1", features = ["devtools"] }
-tauri-plugin-opener = "2.2.6"
+tauri = { version = "2.6.2", features = ["devtools"] }
+tauri-plugin-opener = "2.4.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.11"
+chrono = "0.4.41"
 
 [features]
 # by default Tauri runs in production mode
@@ -34,3 +37,16 @@ default = ["custom-protocol"]
 # this feature is used used for production builds where `devPath` points to the filesystem
 # DO NOT remove this
 custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+incremental = true          # 以较小的步骤编译您的二进制文件。
+rustflags = ["-Zthreads=8"] # 提高编译性能。
+
+[profile.release]
+codegen-units = 1                            # 允许 LLVM 执行更好的优化。
+lto = true                                   # 启用链接时优化。
+opt-level = "s"                              # 优先考虑小的二进制文件大小。如果您更喜欢速度，请使用 `3`。
+panic = "abort"                              # 通过禁用 panic 处理程序来提高性能。
+strip = true                                 # 确保移除调试符号。
+trim-paths = "all"                           # 从您的二进制文件中移除潜在的特权信息。
+rustflags = ["-Cdebuginfo=0", "-Zthreads=8"] # 提高编译性能。
