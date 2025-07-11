@@ -1,0 +1,52 @@
+cargo-features = ["profile-rustflags", "trim-paths"]
+
+[package]
+# About {name} for App
+name = "Craft-UI"
+version = "0.1.0"
+description = "Tauri App WASM"
+edition = "2021"
+authors = []
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "wasm_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.3.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.6.2", features = ["devtools"] }
+tauri-plugin-opener = "2.4.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+env_logger = "0.11"
+chrono = "0.4.41"
+
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = ["custom-protocol"]
+# this feature is used used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+incremental = true          # Compile your binary in smaller steps.
+rustflags = ["-Zthreads=8"] # Improve compilation performance.
+
+[profile.release]
+codegen-units = 1                            # Allow LLVM to perform better optimizations.
+lto = true                                   # Enable Link Time Optimization.
+opt-level = "s"                              # Prioritize smaller binary size. Use `3` if you prefer speed.
+panic = "abort"                              # Improve performance by disabling the panic handler.
+strip = true                                 # Ensure debug symbols are removed.
+trim-paths = "all"                           # Remove potential privileged information from your binary.
+rustflags = ["-Cdebuginfo=0", "-Zthreads=8"] # Improve compilation performance.
