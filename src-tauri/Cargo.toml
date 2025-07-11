@@ -2,7 +2,7 @@ cargo-features = ["profile-rustflags", "trim-paths"]
 
 [package]
 # About {name} for App
-name = "Craft-UI"
+name = "Craft-GUI"
 version = "0.1.0"
 description = "Tauri App WASM"
 edition = "2021"
@@ -28,7 +28,6 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.11"
-chrono = "0.4.41"
 
 [features]
 # by default Tauri runs in production mode

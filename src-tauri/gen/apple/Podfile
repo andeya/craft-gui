@@ -1,13 +1,13 @@
 # Uncomment the next line to define a global platform for your project
 
-target 'Craft-UI_iOS' do
+target 'Craft-GUI_iOS' do
 platform :ios, '13.0'
-  # Pods for Craft-UI_iOS
+  # Pods for Craft-GUI_iOS
 end
 
-target 'Craft-UI_macOS' do
+target 'Craft-GUI_macOS' do
 platform :osx, '11.0'
-  # Pods for Craft-UI_macOS
+  # Pods for Craft-GUI_macOS
 end
 
 # Delete the deployment target for iOS and macOS, causing it to be inherited from the Podfile

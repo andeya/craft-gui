@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "22212071B215BB605D49525E"
-               BuildableName = "Craft-UI_iOS.app"
-               BlueprintName = "Craft-UI_iOS"
-               ReferencedContainer = "container:Craft-UI.xcodeproj">
+               BuildableName = "Craft-GUI_iOS.app"
+               BlueprintName = "Craft-GUI_iOS"
+               ReferencedContainer = "container:Craft-GUI.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "22212071B215BB605D49525E"
-            BuildableName = "Craft-UI_iOS.app"
-            BlueprintName = "Craft-UI_iOS"
-            ReferencedContainer = "container:Craft-UI.xcodeproj">
+            BuildableName = "Craft-GUI_iOS.app"
+            BlueprintName = "Craft-GUI_iOS"
+            ReferencedContainer = "container:Craft-GUI.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -70,9 +70,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "22212071B215BB605D49525E"
-            BuildableName = "Craft-UI_iOS.app"
-            BlueprintName = "Craft-UI_iOS"
-            ReferencedContainer = "container:Craft-UI.xcodeproj">
+            BuildableName = "Craft-GUI_iOS.app"
+            BlueprintName = "Craft-GUI_iOS"
+            ReferencedContainer = "container:Craft-GUI.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -101,9 +101,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "22212071B215BB605D49525E"
-            BuildableName = "Craft-UI_iOS.app"
-            BlueprintName = "Craft-UI_iOS"
-            ReferencedContainer = "container:Craft-UI.xcodeproj">
+            BuildableName = "Craft-GUI_iOS.app"
+            BlueprintName = "Craft-GUI_iOS"
+            ReferencedContainer = "container:Craft-GUI.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>

@@ -1,5 +1,90 @@
-# Tauri + Vue + TS + Vite App
+# Craft GUI
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Craft GUI = Tauri + Vue(Quasar) + Tailwind + TS + Vite.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+<div align="center">
+  <img src="public/readme_1.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
+</div>
+
+## Getting Started
+
+### Running development server and use Tauri window
+
+After cloning for the first time, change your app identifier inside
+`src-tauri/tauri.conf.json` to your own:
+
+```jsonc
+{
+  // ...
+  // The default "com.tauri.craft" will prevent you from building in release mode
+  "identifier": "com.my-application-name.app"
+  // ...
+}
+```
+
+Setup pnpm:
+
+```shell
+npm install -g pnpm
+```
+
+Install and init:
+
+```shell
+pnpm install
+pnpm tauri android init
+pnpm tauri ios init
+```
+
+To develop and run the frontend in a Tauri window:
+
+```shell
+# For Desktop development, run:
+pnpm tauri dev
+
+# For Android development, run:
+pnpm tauri android dev
+
+# For iOS development, run:
+pnpm tauri ios dev
+```
+
+This will load the Next.js frontend directly in a Tauri webview window, in addition to
+starting a development server on `localhost:3000`.
+Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> in a Chromium based WebView (e.g. on
+Windows) to open the web developer console from the Tauri window.
+
+### Building for release
+
+To export the Next.js frontend via SSG and build the Tauri application for release.
+
+#### For Desktop release
+
+```shell
+pnpm tauri build
+```
+
+#### For Android release
+
+1. [sign](https://tauri.app/zh-cn/distribute/sign/android/)
+2. build
+
+```shell
+pnpm tauri android build
+```
+
+#### For iOS release
+
+```shell
+pnpm tauri ios build
+```
+
+### Source structure
+
+Next.js frontend source files are located in `src/` and Tauri Rust application source
+files are located in `src-tauri/`. Please consult the Next.js and Tauri documentation
+respectively for questions pertaining to either technology.
+
+```
+
+```

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Craft UI",
+  "productName": "Craft GUI",
   "version": "0.1.0",
   "identifier": "com.tauri.craft",
   "build": {
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "Craft UI",
+        "title": "Craft GUI",
         "label": "main",
         "width": 1440,
         "height": 900,
@@ -24,7 +24,14 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "*",
+        "script-src": "* 'unsafe-inline' 'unsafe-eval' blob: data:",
+        "connect-src": "*",
+        "font-src": "*",
+        "img-src": "* blob: data:",
+        "style-src": "* 'unsafe-inline'"
+      }
     }
   },
   "bundle": {
