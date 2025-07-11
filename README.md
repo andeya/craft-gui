@@ -31,6 +31,7 @@ npm install -g pnpm
 Install and init:
 
 ```shell
+# rm -rf src-tauri/gen
 pnpm install
 pnpm tauri android init
 pnpm tauri ios init
