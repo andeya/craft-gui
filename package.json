@@ -1,5 +1,5 @@
 {
-  "name": "craft-gui",
+  "name": "CraftGUI",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "lint": "vue-tsc -b"
+    "lint": "vue-tsc -b",
+    "clean": "rm -rf dist node_modules src-tauri/target"
   },
   "dependencies": {
     "@quasar/extras": "^1.17.0",

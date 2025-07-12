@@ -80,12 +80,6 @@ pnpm tauri android build
 pnpm tauri ios build
 ```
 
-### Source structure
-
-Next.js frontend source files are located in `src/` and Tauri Rust application source
-files are located in `src-tauri/`. Please consult the Next.js and Tauri documentation
-respectively for questions pertaining to either technology.
-
 ```
 
 ```
