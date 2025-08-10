@@ -89,7 +89,7 @@ export function generateRoutes(): RouteRecordRaw[] {
           title: "Home",
           icon: "home",
           showInMenu: true,
-          description: "Welcome to Ksool",
+          description: "Welcome to CraftGUI",
           order: 1,
         },
       });
@@ -105,7 +105,7 @@ export function generateRoutes(): RouteRecordRaw[] {
           title: "Home",
           icon: "home",
           showInMenu: true,
-          description: "Welcome to Ksool",
+          description: "Welcome to CraftGUI",
           order: 1,
         },
       });

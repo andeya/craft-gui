@@ -9,7 +9,7 @@ const leftDrawerOpen = ref(false);
 
 // Compute current page title
 const pageTitle = computed(() => {
-  return route.meta?.title || "Ksool";
+  return route.meta?.title || "CraftGUI";
 });
 
 // Auto-generate navigation menu items

@@ -4,7 +4,7 @@
     style="min-height: 100vh"
   >
     <div class="text-center">
-      <h1 class="text-h3 q-mb-md">Welcome to Ksool</h1>
+      <h1 class="text-h3 q-mb-md">Welcome to CraftGUI</h1>
       <p class="text-body1 q-mb-lg">
         A desktop application built with Vue 3 + Quasar + Tauri
       </p>
@@ -25,7 +25,7 @@ export const meta = {
   title: "Home",
   icon: "home",
   showInMenu: true,
-  description: "Welcome to Ksool",
+  description: "Welcome to CraftGUI",
   order: 1,
 };
 </script>

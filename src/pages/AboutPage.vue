@@ -4,9 +4,9 @@
     style="min-height: 100vh"
   >
     <div class="text-center max-width-600">
-      <h1 class="text-h3 q-mb-md">About Ksool</h1>
+      <h1 class="text-h3 q-mb-md">About CraftGUI</h1>
       <p class="text-body1 q-mb-lg">
-        Ksool is a modern desktop application built with the following
+        CraftGUI is a modern desktop application built with the following
         technology stack:
       </p>
 
@@ -48,7 +48,7 @@ export const meta = {
   title: "About",
   icon: "info",
   showInMenu: true,
-  description: "Learn more about Ksool",
+  description: "Learn more about CraftGUI",
   order: 4,
 };
 </script>
