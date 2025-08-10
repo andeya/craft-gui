@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Craft GUI",
+  "productName": "CraftGUI",
   "version": "0.1.0",
   "identifier": "com.tauri.craft",
   "build": {
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "Craft GUI",
+        "title": "CraftGUI",
         "label": "main",
         "width": 1440,
         "height": 900,

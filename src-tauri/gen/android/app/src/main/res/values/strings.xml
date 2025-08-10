@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Craft GUI</string>
-    <string name="main_activity_title">Craft GUI</string>
+    <string name="app_name">CraftGUI</string>
+    <string name="main_activity_title">CraftGUI</string>
 </resources>

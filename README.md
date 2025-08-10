@@ -1,6 +1,6 @@
-# Craft GUI
+# CraftGUI
 
-Craft GUI = Tauri + Vue(Quasar) + Tailwind + TS + Vite.
+CraftGUI = Tauri + Vue(Quasar) + Tailwind + TS + Vite.
 
 <div align="center">
   <img src="public/readme_1.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
@@ -78,8 +78,4 @@ pnpm tauri android build
 
 ```shell
 pnpm tauri ios build
-```
-
-```
-
 ```

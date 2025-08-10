@@ -1,15 +1,3 @@
-<script setup lang="ts">
-import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
-
-const greetMsg = ref("");
-const name = ref("");
-
-async function greet() {
-  greetMsg.value = await invoke("greet", { name: name.value });
-}
-</script>
-
 <template>
   <q-page class="flex column items-center" style="min-height: 100vh">
     <div
@@ -17,7 +5,7 @@ async function greet() {
       style="padding-top: 24vh; margin: 0 auto"
     >
       <div class="text-h4 md:text-h3 text-center q-mb-md">
-        Welcome to Craft GUI
+        {{ meta.description }}
       </div>
       <div
         class="flex justify-center items-center gap-4 md:gap-12 q-mb-md flex-wrap w-full max-w-lg mx-auto"
@@ -57,6 +45,29 @@ async function greet() {
     </div>
   </q-page>
 </template>
+
+<script setup lang="ts">
+import { ref } from "vue";
+import { invoke } from "@tauri-apps/api/core";
+
+const greetMsg = ref("");
+const name = ref("");
+
+async function greet() {
+  greetMsg.value = await invoke("greet", { name: name.value });
+}
+</script>
+
+<script lang="ts">
+// Route metadata
+export const meta = {
+  title: "Rust Call",
+  icon: "api",
+  showInMenu: true,
+  description: "Test Call Rust Function",
+  order: 3,
+};
+</script>
 
 <style scoped>
 .logo {

@@ -13,10 +13,13 @@ import "./quasar_extras.ts";
 import "./global.css";
 
 import App from "./App.vue";
+import router from "./router/auto-routes";
+
 createApp(App)
   .use(Quasar, {
     plugins: {}, // import Quasar plugins and add here
     lang: quasarLang,
     iconSet: quasarIconSet,
   })
+  .use(router)
   .mount("#app");
