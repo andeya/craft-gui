@@ -37,10 +37,10 @@ import { ref } from "vue";
 
 // User profile data
 const userInfo = ref({
-  name: "张三",
-  email: "zhangsan@example.com",
-  phone: "13800138000",
-  address: "北京市朝阳区",
+  name: "John Doe",
+  email: "john.doe@example.com",
+  phone: "+1-555-0123",
+  address: "123 Main Street, New York, NY 10001",
 });
 </script>
 

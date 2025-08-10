@@ -1,8 +1,8 @@
 import type { RouteRecordRaw } from "vue-router";
 import type { RouteMeta, PageComponent } from "../types/route-meta";
 
-// Auto-import all Vue files in views directory
-const modules = import.meta.glob("../views/**/*.vue", {
+// Auto-import all Vue files in pages directory
+const modules = import.meta.glob("../pages/**/*.vue", {
   eager: true,
 }) as Record<string, PageComponent>;
 
@@ -27,7 +27,7 @@ export function generateRoutes(): RouteRecordRaw[] {
   const routes = Object.keys(modules).map((path) => {
     // Generate route path from file path
     let routePath = path
-      .replace("../views/", "") // Remove prefix
+      .replace("../pages/", "") // Remove prefix
       .replace(/\.vue$/, "") // Remove .vue extension
       .replace(/\/index$/, ""); // Convert /index to root path
 
@@ -41,7 +41,7 @@ export function generateRoutes(): RouteRecordRaw[] {
 
     // Generate route name
     const routeName = path
-      .replace("../views/", "")
+      .replace("../pages/", "")
       .replace(/\.vue$/, "")
       .replace(/\/index$/, "")
       .replace(/\//g, "-")
@@ -78,7 +78,7 @@ export function generateRoutes(): RouteRecordRaw[] {
   const hasRootRoute = routes.some((route) => route.path === "/");
   if (!hasRootRoute) {
     // Try to find index.vue in the modules
-    const indexModule = modules["../views/index.vue"];
+    const indexModule = modules["../pages/index.vue"];
     if (indexModule) {
       console.log("Found index.vue, using it as root route");
       routes.unshift({
@@ -100,7 +100,7 @@ export function generateRoutes(): RouteRecordRaw[] {
       routes.unshift({
         path: "/",
         name: "Home",
-        component: () => import("../views/index.vue"),
+        component: () => import("../pages/index.vue"),
         meta: {
           title: "Home",
           icon: "home",
@@ -122,7 +122,7 @@ export function generateRoutes(): RouteRecordRaw[] {
   return routes;
 }
 
-// 生成菜单项
+// Generate menu items
 export function generateMenuItems(): MenuItem[] {
   const routes = generateRoutes();
 
@@ -145,7 +145,7 @@ export function getRouteConfig(): RouteConfig[] {
 
     // Generate route path (same logic as generateRoutes)
     let routePath = path
-      .replace("../views/", "")
+      .replace("../pages/", "")
       .replace(/\.vue$/, "")
       .replace(/\/index$/, "");
 

@@ -3,7 +3,7 @@
 CraftGUI = Tauri + Vue(Quasar) + Tailwind + TS + Vite.
 
 <div align="center">
-  <img src="public/readme_1.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
+  <img src="docs/readme01.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
 </div>
 
 ## Getting Started
@@ -67,7 +67,7 @@ pnpm tauri build
 
 #### For Android release
 
-1. [sign](https://tauri.app/zh-cn/distribute/sign/android/)
+1. [sign](https://tauri.app/distribute/sign/android/)
 2. build
 
 ```shell

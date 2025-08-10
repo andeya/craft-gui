@@ -4,7 +4,7 @@ This project uses an automatic route generation system that collects metadata fr
 
 ## How It Works
 
-Each Vue component in the `src/views/` directory can export metadata that will be automatically collected and used for:
+Each Vue component in the `src/pages/` directory can export metadata that will be automatically collected and used for:
 
 - Route generation
 - Menu item creation
@@ -14,7 +14,7 @@ Each Vue component in the `src/views/` directory can export metadata that will b
 
 ## Adding a New Page
 
-To add a new page, simply create a `.vue` file in the `src/views/` directory:
+To add a new page, simply create a `.vue` file in the `src/pages/` directory:
 
 ```vue
 <template>
@@ -54,13 +54,13 @@ export const meta = {
 
 | File Path                               | Route Path                 | Example                  |
 | --------------------------------------- | -------------------------- | ------------------------ |
-| `src/views/index.vue`                   | `/`                        | Home page                |
-| `src/views/api.vue`                     | `/api`                     | API page                 |
-| `src/views/user-profile.vue`            | `/user-profile`            | User profile page        |
-| `src/views/admin/index.vue`             | `/admin`                   | Admin index page         |
-| `src/views/admin/users.vue`             | `/admin/users`             | Admin users page         |
-| `src/views/admin/settings.vue`          | `/admin/settings`          | Admin settings page      |
-| `src/views/admin/reports/analytics.vue` | `/admin/reports/analytics` | Nested subdirectory page |
+| `src/pages/index.vue`                   | `/`                        | Home page                |
+| `src/pages/api.vue`                     | `/api`                     | API page                 |
+| `src/pages/user-profile.vue`            | `/user-profile`            | User profile page        |
+| `src/pages/admin/index.vue`             | `/admin`                   | Admin index page         |
+| `src/pages/admin/users.vue`             | `/admin/users`             | Admin users page         |
+| `src/pages/admin/settings.vue`          | `/admin/settings`          | Admin settings page      |
+| `src/pages/admin/reports/analytics.vue` | `/admin/reports/analytics` | Nested subdirectory page |
 
 ## Icon Names
 
@@ -122,7 +122,7 @@ export const meta = {
 The system fully supports nested subdirectories. You can organize your views in any directory structure:
 
 ```
-src/views/
+src/pages/
 ├── index.vue                       # /
 ├── api.vue                         # /api
 ├── admin/
@@ -148,11 +148,11 @@ src/views/
 
 The system automatically generates proper Vue Router paths:
 
-1. **Root Path**: `src/views/index.vue` → `/`
-2. **Simple Path**: `src/views/api.vue` → `/api`
-3. **Subdirectory**: `src/views/admin/users.vue` → `/admin/users`
-4. **Deep Nesting**: `src/views/admin/reports/analytics.vue` → `/admin/reports/analytics`
-5. **Index Files**: `src/views/admin/index.vue` → `/admin`
+1. **Root Path**: `src/pages/index.vue` → `/`
+2. **Simple Path**: `src/pages/api.vue` → `/api`
+3. **Subdirectory**: `src/pages/admin/users.vue` → `/admin/users`
+4. **Deep Nesting**: `src/pages/admin/reports/analytics.vue` → `/admin/reports/analytics`
+5. **Index Files**: `src/pages/admin/index.vue` → `/admin`
 
 ## Benefits
 
