@@ -42,12 +42,10 @@
 </script>
 
 <script lang="ts">
-// Route metadata
+// Route metadata - automatically set showInMenu=true and order=10 via filename prefix 010.admin-home.vue
 export const meta = {
   title: "Admin Dashboard",
   icon: "admin_panel_settings",
-  showInMenu: true,
   description: "Administrative dashboard and controls",
-  order: 10,
 };
 </script>

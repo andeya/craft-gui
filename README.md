@@ -1,10 +1,52 @@
 # CraftGUI
 
-CraftGUI = Tauri + Vue(Quasar) + Tailwind + TS + Vite.
+A cross-platform application templete built with Vue 3 + Quasar + Tauri.
 
 <div align="center">
-  <img src="docs/readme01.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
+  <img src="docs/image01.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
+  <img src="docs/image02.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />
 </div>
+
+## Innovative Feature: Filename Prefix Routing Metadata Scheme
+
+This project implements an innovative routing metadata definition scheme that automatically sets the `showInMenu` and `order` properties of routes through filename prefixes.
+
+### Naming Rules
+
+- `001.index.vue` → `showInMenu: true`, `order: 1`, route path: `/index`
+- `002.dashboard.vue` → `showInMenu: true`, `order: 2`, route path: `/dashboard`
+- `010.admin-home.vue` → `showInMenu: true`, `order: 10`, route path: `/admin/admin-home`
+- `hidden-page.vue` → `showInMenu: false`, `order: 0`, route path: `/hidden-page`
+
+### Advantages
+
+1. **Simplified Development**: No need to repeatedly define `showInMenu` and `order` in each component
+2. **Intuitive Ordering**: Menu order can be seen directly from the filename
+3. **Enforced Standards**: No overrides allowed in components, ensuring naming convention consistency
+4. **Consistency**: Unified naming conventions for better team collaboration
+
+For detailed documentation, see: [Router System Documentation](./docs/ROUTER_SYSTEM.md)
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build application
+pnpm build
+```
+
+## Tech Stack
+
+- **Frontend Framework**: Vue 3
+- **UI Framework**: Quasar
+- **Desktop Framework**: Tauri
+- **Build Tool**: Vite
+- **Package Manager**: pnpm
 
 ## Getting Started
 
@@ -32,50 +74,5 @@ Install and init:
 
 ```shell
 # rm -rf src-tauri/gen
-pnpm install
-pnpm tauri android init
-pnpm tauri ios init
-```
 
-To develop and run the frontend in a Tauri window:
-
-```shell
-# For Desktop development, run:
-pnpm tauri dev
-
-# For Android development, run:
-pnpm tauri android dev
-
-# For iOS development, run:
-pnpm tauri ios dev
-```
-
-This will load the Next.js frontend directly in a Tauri webview window, in addition to
-starting a development server on `localhost:3000`.
-Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> in a Chromium based WebView (e.g. on
-Windows) to open the web developer console from the Tauri window.
-
-### Building for release
-
-To export the Next.js frontend via SSG and build the Tauri application for release.
-
-#### For Desktop release
-
-```shell
-pnpm tauri build
-```
-
-#### For Android release
-
-1. [sign](https://tauri.app/distribute/sign/android/)
-2. build
-
-```shell
-pnpm tauri android build
-```
-
-#### For iOS release
-
-```shell
-pnpm tauri ios build
 ```

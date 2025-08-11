@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { useGlobalRouter } from "./composables/useGlobalRouter";
+import { initializeRouteManager } from "./composables/useRouteManager";
+import { useCurrentRoute } from "./composables/useCurrentRoute";
+import { useNavigation } from "./composables/useNavigation";
+import { useGlobalState } from "./composables/useGlobalState";
 import { setPageTitle } from "./utils/app-config";
 import { RouteMeta } from "./types/route-meta";
 
 const leftDrawerOpen = ref(false);
 
-// Use global router composable
-const { currentRoute, currentRouteTitle, currentPath, menuRoutes, goTo } =
-  useGlobalRouter();
+// Initialize route manager once
+const { menuRoutes } = initializeRouteManager();
+
+// Get current route state (must be in setup function)
+const { currentRoute } = useCurrentRoute();
+
+// Get navigation methods (must be in setup function)
+const { goTo } = useNavigation();
+
+// Initialize global state management
+useGlobalState();
 
 // Watch for route changes and update page title
 watch(
-  currentRouteTitle,
+  () => currentRoute.value.title,
   (newTitle) => {
     setPageTitle(newTitle);
   },
@@ -31,17 +42,11 @@ function navigateTo(path: string) {
 
 // Check if current route is active
 function isActive(path: string) {
-  return currentPath.value === path;
+  return currentRoute.value.path === path;
 }
 
 // Show console access information
-console.log("🌐 Global Router Object Available!");
-console.log("Access router info in console:");
-console.log("  $router.currentRoute");
-console.log("  $router.allRoutes");
-console.log("  $router.menuRoutes");
-console.log("  $router.getCurrentPath()");
-console.log("  $router.navigateTo('/admin')");
+console.log("🌐 Global Router Object Available: $router");
 </script>
 
 <template>
@@ -58,7 +63,7 @@ console.log("  $router.navigateTo('/admin')");
         />
 
         <q-toolbar-title>
-          <span class="text-lg font-bold">{{ currentRouteTitle }}</span>
+          <span class="text-lg font-bold">{{ currentRoute.title }}</span>
           <span class="text-sm text-secondary text-white ml-2">{{
             currentRoute?.meta?.description
           }}</span>

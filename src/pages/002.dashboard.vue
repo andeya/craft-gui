@@ -44,12 +44,10 @@
 </script>
 
 <script lang="ts">
-// Route metadata
+// Route metadata - automatically set showInMenu=true and order=2 via filename prefix 002.dashboard.vue
 export const meta = {
   title: "Dashboard",
   icon: "dashboard",
-  showInMenu: true,
-  description: "View application statistics and metrics",
-  order: 2,
+  description: "view application statistics and metrics",
 };
 </script>

@@ -72,12 +72,10 @@
 </script>
 
 <script lang="ts">
-// Route metadata
+// Route metadata - automatically set showInMenu=true and order=20 via filename prefix 020.analytics.vue
 export const meta = {
   title: "Analytics Reports",
   icon: "analytics",
-  showInMenu: true,
   description: "View detailed analytics and performance metrics",
-  order: 13,
 };
 </script>

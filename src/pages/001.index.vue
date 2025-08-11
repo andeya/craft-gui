@@ -8,8 +8,8 @@
       <p class="text-body1 q-mb-lg">
         A desktop application built with Vue 3 + Quasar + Tauri
       </p>
-      <q-btn color="primary" size="lg" @click="$router.push('/api')">
-        Get Started
+      <q-btn color="primary" size="lg" @click="$router.push('/route-map')">
+        Route Map
       </q-btn>
     </div>
   </q-page>
@@ -20,12 +20,10 @@
 </script>
 
 <script lang="ts">
-// Route metadata
+// Route metadata - automatically set showInMenu=true and order=1 via filename prefix 001.index.vue
 export const meta = {
   title: "Home",
   icon: "home",
-  showInMenu: true,
-  description: "Welcome to CraftGUI",
-  order: 1,
+  description: "welcome to CraftGUI",
 };
 </script>

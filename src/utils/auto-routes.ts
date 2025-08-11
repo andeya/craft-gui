@@ -20,14 +20,60 @@ export interface MenuItem extends RouteMeta {
   path: string;
 }
 
+// Parse filename for route metadata
+function parseFilenameForMetadata(filename: string): {
+  showInMenu: boolean;
+  order: number;
+  cleanName: string;
+} {
+  // Remove .vue extension
+  const nameWithoutExt = filename.replace(/\.vue$/, "");
+
+  // Check for prefix pattern like "001.abc" or "1.abc"
+  const prefixMatch = nameWithoutExt.match(/^(\d+)\.(.+)$/);
+
+  if (prefixMatch) {
+    const order = parseInt(prefixMatch[1], 10);
+    const cleanName = prefixMatch[2];
+    return {
+      showInMenu: true,
+      order: order,
+      cleanName: cleanName,
+    };
+  }
+
+  // No prefix found - hide from menu and set order to 0
+  return {
+    showInMenu: false,
+    order: 0,
+    cleanName: nameWithoutExt,
+  };
+}
+
 // Generate route configuration
 export function generateRoutes(): RouteRecordRaw[] {
   const routes = Object.keys(modules).map((path) => {
-    // Generate route path from file path
+    // Extract filename from path
+    const filename = path.split("/").pop() || "";
+
+    // Parse filename for metadata
+    const { showInMenu, order, cleanName } = parseFilenameForMetadata(filename);
+
+    // Generate route path from file path, but use cleanName for the final segment
     let routePath = path
       .replace("../pages/", "") // Remove prefix
       .replace(/\.vue$/, "") // Remove .vue extension
       .replace(/\/index$/, ""); // Convert /index to root path
+
+    // If the filename had a prefix, replace the filename part with cleanName
+    if (filename !== cleanName + ".vue") {
+      const pathParts = routePath.split("/");
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart && lastPart.match(/^\d+\./)) {
+        pathParts[pathParts.length - 1] = cleanName;
+        routePath = pathParts.join("/");
+      }
+    }
 
     // Handle root path - special case for index.vue
     if (routePath === "" || routePath === "index") {
@@ -52,12 +98,22 @@ export function generateRoutes(): RouteRecordRaw[] {
     const component = modules[path];
     const metadata = (component.meta as RouteMeta) || ({} as RouteMeta);
 
-    // Use metadata from component or fallback to defaults
+    // Check if component tries to override showInMenu or order (not allowed)
+    if (metadata.showInMenu !== undefined) {
+      throw new Error(
+        `Component ${path} cannot override showInMenu. Use filename prefix to control menu visibility.`
+      );
+    }
+    if (metadata.order !== undefined) {
+      throw new Error(
+        `Component ${path} cannot override order. Use filename prefix to control menu order.`
+      );
+    }
+
+    // Use filename-based metadata only
     const title = metadata.title || routeName;
     const icon = metadata.icon || "article";
-    const showInMenu = metadata.showInMenu !== false; // Default to true
     const description = metadata.description || "";
-    const order = metadata.order || 999;
 
     return {
       path: routePath,
@@ -76,14 +132,19 @@ export function generateRoutes(): RouteRecordRaw[] {
   // Add a catch-all route for the root path if no root route exists
   const hasRootRoute = routes.some((route) => route.path === "/");
   if (!hasRootRoute) {
-    // Try to find index.vue in the modules
-    const indexModule = modules["../pages/index.vue"];
+    // Try to find index.vue (ignoring prefix) in the modules
+    const indexModule = Object.keys(modules).find((path) => {
+      const filename = path.split("/").pop() || "";
+      const { cleanName } = parseFilenameForMetadata(filename);
+      return cleanName === "index";
+    });
+
     if (indexModule) {
       console.log("Found index.vue, using it as root route");
       routes.unshift({
         path: "/",
         name: "Home",
-        component: indexModule.default || indexModule,
+        component: modules[indexModule].default || modules[indexModule],
         meta: {
           title: "Home",
           icon: "home",
@@ -94,12 +155,20 @@ export function generateRoutes(): RouteRecordRaw[] {
       });
     } else {
       console.warn(
-        "No root route found and no index.vue available, adding fallback route"
+        "No root route found and no index.vue available, creating a simple fallback route"
       );
       routes.unshift({
         path: "/",
         name: "Home",
-        component: () => import("../pages/index.vue"),
+        component: {
+          template: `
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+              <h1>Welcome to ${getAppName()}</h1>
+              <p>No index page found. Please create a file with 'index' in the name.</p>
+              <p>Example: 001.index.vue, index.vue, or home.vue</p>
+            </div>
+          `,
+        },
         meta: {
           title: "Home",
           icon: "home",
@@ -120,6 +189,12 @@ export function generateRoutes(): RouteRecordRaw[] {
   routes.sort((a, b) => {
     const pathA = a.path;
     const pathB = b.path;
+
+    if (pathA === pathB) {
+      throw new Error(
+        `Route name ${a.name} and ${b.name} have same path: ${pathA}`
+      );
+    }
 
     // 1. Root route (/) should always be first
     if (pathA === "/") return -1;
@@ -162,5 +237,18 @@ export function generateMenuItems(): MenuItem[] {
 export function generateMenuRoutes(routes: RouteRecordRaw[]): RouteRecordRaw[] {
   return routes
     .filter((route) => route.meta?.showInMenu === true) // Filter out routes not shown in menu
-    .sort((a, b) => (a.meta?.order as number) - (b.meta?.order as number)); // Sort by order
+    .sort((a, b) => {
+      const orderA = a.meta?.order as number;
+      const orderB = b.meta?.order as number;
+
+      // First sort by order
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // If order is equal, sort by title
+      const titleA = (a.meta?.title as string) || "";
+      const titleB = (b.meta?.title as string) || "";
+      return titleA.localeCompare(titleB);
+    });
 }

@@ -63,9 +63,7 @@ async function greet() {
 export const meta = {
   title: "Rust Call",
   icon: "api",
-  showInMenu: true,
-  description: "Test Call Rust Function",
-  order: 3,
+  description: "test Call Rust Function",
 };
 </script>
 

@@ -39,12 +39,10 @@ const notifications = ref(true);
 </script>
 
 <script lang="ts">
-// Route metadata
+// Route metadata - automatically set showInMenu=true and order=998 via filename prefix 998.settings.vue
 export const meta = {
   title: "Settings",
   icon: "settings",
-  showInMenu: true,
-  description: "Configure application settings",
-  order: 5,
+  description: "configure application settings",
 };
 </script>
