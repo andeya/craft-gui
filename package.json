@@ -1,5 +1,6 @@
 {
   "name": "CraftGUI",
+  "description": "CraftGUI = Tauri + Vue(Quasar) + Tailwind + TS + Vite.",
   "private": true,
   "version": "0.0.0",
   "type": "module",

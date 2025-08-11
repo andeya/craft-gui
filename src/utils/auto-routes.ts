@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from "vue-router";
 import type { RouteMeta, PageComponent } from "../types/route-meta";
+import { getAppName } from "./app-config";
 
 // Auto-import all Vue files in pages directory
 const modules = import.meta.glob("../pages/**/*.vue", {
@@ -15,11 +16,8 @@ export interface RouteConfig {
 }
 
 // Menu item interface
-export interface MenuItem {
-  name: string;
+export interface MenuItem extends RouteMeta {
   path: string;
-  icon: string;
-  order?: number;
 }
 
 // Generate route configuration
@@ -40,21 +38,22 @@ export function generateRoutes(): RouteRecordRaw[] {
     }
 
     // Generate route name
-    const routeName = path
-      .replace("../pages/", "")
-      .replace(/\.vue$/, "")
-      .replace(/\/index$/, "")
-      .replace(/\//g, "-")
-      .replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
-      .replace(/^-+/, "")
-      .replace(/-+$/, "");
+    const routeName =
+      path
+        .replace("../pages/", "")
+        .replace(/\.vue$/, "")
+        .replace(/\/index$/, "")
+        .replace(/\//g, "-")
+        .replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
+        .replace(/^-+/, "")
+        .replace(/-+$/, "") || "Home";
 
     // Get component and metadata
     const component = modules[path];
-    const metadata = (component.meta as RouteMeta) || {};
+    const metadata = (component.meta as RouteMeta) || ({} as RouteMeta);
 
     // Use metadata from component or fallback to defaults
-    const title = metadata.title || "Untitled";
+    const title = metadata.title || routeName;
     const icon = metadata.icon || "article";
     const showInMenu = metadata.showInMenu !== false; // Default to true
     const description = metadata.description || "";
@@ -62,7 +61,7 @@ export function generateRoutes(): RouteRecordRaw[] {
 
     return {
       path: routePath,
-      name: routeName || "Home",
+      name: routeName,
       component: component.default || component,
       meta: {
         title,
@@ -89,7 +88,7 @@ export function generateRoutes(): RouteRecordRaw[] {
           title: "Home",
           icon: "home",
           showInMenu: true,
-          description: "Welcome to CraftGUI",
+          description: `Welcome to ${getAppName()}`,
           order: 1,
         },
       });
@@ -105,18 +104,45 @@ export function generateRoutes(): RouteRecordRaw[] {
           title: "Home",
           icon: "home",
           showInMenu: true,
-          description: "Welcome to CraftGUI",
+          description: `Welcome to ${getAppName()}`,
           order: 1,
         },
       });
     }
   }
 
-  // Ensure routes are sorted with root route first
+  // Enhanced route sorting with proper priority order
+  // This ensures Vue Router matches routes in the correct order:
+  // 1. Root route (/) - highest priority
+  // 2. More specific paths - before less specific paths (by segment count)
+  // 3. Static routes - before dynamic routes (within same specificity)
+  // 4. Alphabetical order - for consistent ordering
   routes.sort((a, b) => {
-    if (a.path === "/") return -1;
-    if (b.path === "/") return 1;
-    return 0;
+    const pathA = a.path;
+    const pathB = b.path;
+
+    // 1. Root route (/) should always be first
+    if (pathA === "/") return -1;
+    if (pathB === "/") return 1;
+
+    // 2. More specific paths should come before less specific paths
+    const segmentsA = pathA.split("/").filter(Boolean);
+    const segmentsB = pathB.split("/").filter(Boolean);
+
+    // If one path has more segments, it's more specific
+    if (segmentsA.length !== segmentsB.length) {
+      return segmentsB.length - segmentsA.length; // More segments first
+    }
+
+    // 3. For paths with same number of segments, static routes come before dynamic routes
+    const isDynamicA = pathA.includes(":");
+    const isDynamicB = pathB.includes(":");
+
+    if (!isDynamicA && isDynamicB) return -1;
+    if (isDynamicA && !isDynamicB) return 1;
+
+    // 4. For paths with same specificity and type, sort alphabetically
+    return pathA.localeCompare(pathB);
   });
 
   return routes;
@@ -124,54 +150,17 @@ export function generateRoutes(): RouteRecordRaw[] {
 
 // Generate menu items
 export function generateMenuItems(): MenuItem[] {
-  const routes = generateRoutes();
-
-  return routes
-    .filter((route) => route.meta?.showInMenu !== false) // Filter out routes not shown in menu
-    .map((route) => ({
-      name: (route.meta?.title as string) || (route.name as string),
-      path: route.path,
-      icon: (route.meta?.icon as string) || "article",
-      order: (route.meta?.order as number) || 999,
-    }))
-    .sort((a, b) => (a.order || 999) - (b.order || 999)); // Sort by order
+  return generateMenuRoutes(generateRoutes()).map(
+    (route) =>
+      ({
+        path: route.path,
+        ...route.meta,
+      } as MenuItem)
+  );
 }
 
-// Get route configuration (for debugging)
-export function getRouteConfig(): RouteConfig[] {
-  return Object.keys(modules).map((path) => {
-    const component = modules[path];
-    const metadata = (component.meta as RouteMeta) || {};
-
-    // Generate route path (same logic as generateRoutes)
-    let routePath = path
-      .replace("../pages/", "")
-      .replace(/\.vue$/, "")
-      .replace(/\/index$/, "");
-
-    // Handle root path - special case for HomePage.vue
-    if (routePath === "" || routePath === "HomePage") {
-      routePath = "/";
-    } else {
-      // Ensure path starts with /
-      routePath = "/" + routePath;
-    }
-
-    return {
-      path: routePath,
-      name:
-        path
-          .split("/")
-          .pop()
-          ?.replace(/\.vue$/, "") || "",
-      component: component.default || component,
-      meta: {
-        title: metadata.title || "Untitled",
-        icon: metadata.icon || "article",
-        showInMenu: metadata.showInMenu !== false,
-        description: metadata.description || "",
-        order: metadata.order || 999,
-      },
-    };
-  });
+export function generateMenuRoutes(routes: RouteRecordRaw[]): RouteRecordRaw[] {
+  return routes
+    .filter((route) => route.meta?.showInMenu === true) // Filter out routes not shown in menu
+    .sort((a, b) => (a.meta?.order as number) - (b.meta?.order as number)); // Sort by order
 }

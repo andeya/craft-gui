@@ -1,33 +1,46 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { generateMenuItems } from "./utils/auto-routes";
+import { ref, watch } from "vue";
+import { useGlobalRouter } from "./composables/useGlobalRouter";
+import { setPageTitle } from "./utils/app-config";
 
-const route = useRoute();
-const router = useRouter();
 const leftDrawerOpen = ref(false);
 
-// Compute current page title
-const pageTitle = computed(() => {
-  return route.meta?.title || "CraftGUI";
-});
+// Use global router composable
+const { currentRoute, currentRouteTitle, currentPath, menuRoutes, goTo } =
+  useGlobalRouter();
 
-// Auto-generate navigation menu items
-const menuItems = generateMenuItems();
+// Watch for route changes and update page title
+watch(
+  currentRouteTitle,
+  (newTitle) => {
+    setPageTitle(newTitle);
+  },
+  { immediate: true }
+);
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
 
 function navigateTo(path: string) {
-  router.push(path);
+  // Use global router navigation
+  goTo(path);
   leftDrawerOpen.value = false; // Close drawer after navigation
 }
 
 // Check if current route is active
 function isActive(path: string) {
-  return route.path === path;
+  return currentPath.value === path;
 }
+
+// Show console access information
+console.log("🌐 Global Router Object Available!");
+console.log("Access router info in console:");
+console.log("  $router.currentRoute");
+console.log("  $router.allRoutes");
+console.log("  $router.menuRoutes");
+console.log("  $router.getCurrentPath()");
+console.log("  $router.navigateTo('/admin')");
 </script>
 
 <template>
@@ -43,7 +56,12 @@ function isActive(path: string) {
           icon="menu"
         />
 
-        <q-toolbar-title>{{ pageTitle }}</q-toolbar-title>
+        <q-toolbar-title>
+          <span class="text-lg font-bold">{{ currentRouteTitle }}</span>
+          <span class="text-sm text-secondary text-white ml-2">{{
+            currentRoute?.meta?.description
+          }}</span>
+        </q-toolbar-title>
       </q-toolbar>
     </q-header>
 
@@ -52,17 +70,17 @@ function isActive(path: string) {
         <q-item-label header> Navigation Menu </q-item-label>
 
         <q-item
-          v-for="item in menuItems"
+          v-for="item in menuRoutes"
           :key="item.path"
           clickable
           :active="isActive(item.path)"
           @click="navigateTo(item.path)"
         >
           <q-item-section avatar>
-            <q-icon :name="item.icon" />
+            <q-icon :name="item.meta!.icon" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>{{ item.name }}</q-item-label>
+            <q-item-label>{{ item.meta!.title }}</q-item-label>
           </q-item-section>
         </q-item>
 

@@ -16,7 +16,15 @@ import "./global.css";
 import App from "./App.vue";
 import router from "./router/auto-routes";
 
-createApp(App)
+// Set up global router utilities
+import { setGlobalRouter } from "./utils/global-router";
+
+const app = createApp(App);
+
+// Set the global router instance before mounting
+setGlobalRouter(router);
+
+app
   .use(Quasar, {
     plugins: {}, // import Quasar plugins and add here
     lang: quasarLang,
