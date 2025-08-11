@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { useGlobalRouter } from "./composables/useGlobalRouter";
 import { setPageTitle } from "./utils/app-config";
+import { RouteMeta } from "./types/route-meta";
 
 const leftDrawerOpen = ref(false);
 
@@ -77,10 +78,10 @@ console.log("  $router.navigateTo('/admin')");
           @click="navigateTo(item.path)"
         >
           <q-item-section avatar>
-            <q-icon :name="item.meta!.icon" />
+            <q-icon :name="RouteMeta.getIconName(item.meta)" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>{{ item.meta!.title }}</q-item-label>
+            <q-item-label>{{ RouteMeta.getTitle(item.meta) }}</q-item-label>
           </q-item-section>
         </q-item>
 

@@ -7,6 +7,16 @@ export interface RouteMeta {
   order?: number;
 }
 
+export namespace RouteMeta {
+  export function getIconName(meta: any): string {
+    return (meta?.icon as string) || "article";
+  }
+
+  export function getTitle(meta: any): string {
+    return (meta?.title as string) || "Untitled";
+  }
+}
+
 // Page component interface with metadata
 export interface PageComponent {
   default: any;
