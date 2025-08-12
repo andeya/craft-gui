@@ -14,7 +14,8 @@ import "./quasar_extras.ts";
 import "./global.css";
 
 import App from "./App.vue";
-import router from "./router/auto-routes";
+import { router } from "./router/auto-routes";
+import { registerWindowRouterObject } from "./composables/route";
 
 const app = createApp(App);
 
@@ -26,3 +27,5 @@ app
   })
   .use(router)
   .mount("#app");
+
+registerWindowRouterObject();

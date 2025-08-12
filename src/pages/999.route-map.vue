@@ -1,99 +1,7 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- Navigation Controls -->
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="text-h6">Navigation Controls</div>
-        <div class="row q-gutter-sm">
-          <q-btn color="primary" @click="goBack" icon="arrow_back">
-            Back
-          </q-btn>
-          <q-btn color="secondary" @click="goTo('/')" icon="home"> Home </q-btn>
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <!-- Route Statistics -->
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="text-h6">Route Statistics</div>
-        <q-list>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Total Routes</q-item-label>
-              <q-item-label caption>{{ allRoutes.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Menu Routes</q-item-label>
-              <q-item-label caption>{{ menuRoutes.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Depth 1 Routes</q-item-label>
-              <q-item-label caption>{{ depth1Routes.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-    </q-card>
-
-    <!-- All Routes Table -->
-    <q-card class="q-mt-md">
-      <q-card-section>
-        <div class="text-h6">All Routes</div>
-        <q-table
-          :rows="allRoutes"
-          :columns="routeColumns"
-          row-key="path"
-          flat
-          bordered
-          :pagination="{ rowsPerPage: 100 }"
-          class="routes-table"
-          header-class="table-header"
-          style="
-            --q-table-header-font-size: 16px;
-            --q-table-header-font-weight: 700;
-            --q-table-header-bg: #f5f5f5;
-            --q-table-header-color: #1976d2;
-          "
-        >
-          <template v-slot:body="props">
-            <q-tr :props="props" @click="onRowClick($event, props.row)">
-              <q-td key="icon" :props="props">
-                <q-icon :name="RouteMeta.getIconName(props.row.meta)" />
-              </q-td>
-              <q-td key="title" :props="props">
-                {{ RouteMeta.getTitle(props.row.meta) }}
-              </q-td>
-              <q-td key="path" :props="props">
-                {{ props.row.path }}
-              </q-td>
-              <q-td key="name" :props="props">
-                {{ props.row.name || "N/A" }}
-              </q-td>
-              <q-td key="order" :props="props">
-                {{ props.row.meta?.order || 0 }}
-              </q-td>
-              <q-td key="showInMenu" :props="props">
-                <q-icon
-                  :name="props.row.meta?.showInMenu ? 'check_circle' : 'cancel'"
-                  :color="props.row.meta?.showInMenu ? 'positive' : 'negative'"
-                />
-              </q-td>
-              <q-td key="description" :props="props">
-                {{ props.row.meta?.description || "" }}
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </q-card-section>
-    </q-card>
-
     <!-- Route Testing -->
-    <q-card class="q-mt-md">
+    <q-card class="q-mb-md">
       <q-card-section>
         <div class="text-h6">Route Testing</div>
         <div class="row q-gutter-sm q-mb-md">
@@ -111,34 +19,120 @@
         </div>
       </q-card-section>
     </q-card>
+    <!-- Route Statistics -->
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">Route Statistics</div>
+        <q-list>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Total Routes</q-item-label>
+              <q-item-label caption>{{ routes.length }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Menu Routes</q-item-label>
+              <q-item-label caption>{{ menuRoutes.length }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Depth 1 Routes</q-item-label>
+              <q-item-label caption>{{ depth1Routes.length }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section>
+              <q-item-label>Route Groups</q-item-label>
+              <q-item-label caption>{{ routeGroupInfos.length }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-card-section>
+    </q-card>
+
+    <!-- Route Groups Tables -->
+    <div v-for="group in routeGroupInfos" :key="group.title" class="q-mt-md">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">
+            {{ group.title }} ({{ group.routes.length }} routes)
+            <q-chip
+              v-if="group.order !== 0"
+              :label="`Order: ${group.order}`"
+              color="primary"
+              size="sm"
+              class="q-ml-sm"
+            />
+          </div>
+          <q-table
+            :rows="group.routes"
+            :columns="routeInfoColumns"
+            row-key="path"
+            flat
+            bordered
+            :pagination="{ rowsPerPage: 0 }"
+            hide-pagination
+            class="routes-table"
+            header-class="table-header"
+            style="
+              --q-table-header-font-size: 16px;
+              --q-table-header-font-weight: 700;
+              --q-table-header-bg: #f5f5f5;
+              --q-table-header-color: #1976d2;
+            "
+          >
+            <template v-slot:body="props">
+              <q-tr :props="props" @click="$router.push(props.row.path)">
+                <q-td key="icon" :props="props">
+                  <q-icon :name="props.row.icon" />
+                </q-td>
+                <q-td key="title" :props="props">
+                  {{ props.row.title }}
+                </q-td>
+                <q-td key="path" :props="props">
+                  {{ props.row.path }}
+                </q-td>
+                <q-td key="order" :props="props">
+                  {{ props.row.order || 0 }}
+                </q-td>
+                <q-td key="showInMenu" :props="props">
+                  <q-icon
+                    :name="props.row.showInMenu ? 'check_circle' : 'cancel'"
+                    :color="props.row.showInMenu ? 'positive' : 'negative'"
+                  />
+                </q-td>
+                <q-td key="description" :props="props">
+                  {{ props.row.description || "" }}
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
+        </q-card-section>
+      </q-card>
+    </div>
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouteManager } from "../composables/useRouteManager";
 
-import { useNavigation } from "../composables/useNavigation";
-import { RouteMeta } from "../types/route-meta";
-
-// Use route manager API directly
-const {
-  allRoutes,
-  menuRoutes,
-  depth1Routes,
+import {
   findRouteByPath,
   checkRouteExists,
-} = useRouteManager();
+  getRoutesByDepth,
+} from "../composables/route";
+import { routes, menuRoutes, routeGroupInfos } from "../router/auto-routes";
 
-// Get navigation methods (must be in setup function)
-const { goTo, goBack } = useNavigation();
+const depth1Routes = getRoutesByDepth(1);
 
 // Test route functionality
 const testPath = ref("/");
 const testResult = ref<any>(null);
 
-// Table columns definition
-const routeColumns = [
+// Table columns definition for route groups
+const routeInfoColumns = [
   {
     name: "icon",
     label: "Icon",
@@ -148,7 +142,7 @@ const routeColumns = [
   {
     name: "title",
     label: "Title",
-    field: (row: any) => RouteMeta.getTitle(row.meta),
+    field: "title",
     sortable: true,
     align: "left" as const,
   },
@@ -160,37 +154,26 @@ const routeColumns = [
     align: "left" as const,
   },
   {
-    name: "name",
-    label: "Name",
-    field: "name",
-    sortable: true,
-    align: "left" as const,
-  },
-  {
     name: "order",
     label: "Order",
-    field: (row: any) => row.meta?.order || 0,
+    field: "order",
     sortable: true,
     align: "center" as const,
   },
   {
     name: "showInMenu",
     label: "Show in Menu",
-    field: (row: any) => row.meta?.showInMenu || false,
+    field: "showInMenu",
     sortable: true,
     align: "center" as const,
   },
   {
     name: "description",
     label: "Description",
-    field: (row: any) => row.meta?.description || "",
+    field: "description",
     align: "left" as const,
   },
 ];
-
-function onRowClick(_evt: any, row: any) {
-  goTo(row.path);
-}
 
 function testRoute() {
   const route = findRouteByPath(testPath.value);

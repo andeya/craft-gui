@@ -4,6 +4,9 @@
  * Perfect for console debugging and avoiding Proxy objects
  */
 export function deepClone<T>(obj: T): T {
+  if (typeof obj === "function" || obj === null || obj === undefined) {
+    return obj;
+  }
   try {
     return JSON.parse(JSON.stringify(obj));
   } catch (error) {

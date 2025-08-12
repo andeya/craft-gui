@@ -32,20 +32,3 @@ export function getAppMetadata() {
     description: getAppDescription(),
   };
 }
-
-/**
- * Set page title dynamically
- */
-export function setPageTitle(title?: string): void {
-  const appName = getAppName();
-  const fullTitle = title ? `${title} - ${appName}` : appName;
-  document.title = fullTitle;
-}
-
-/**
- * Get formatted page title
- */
-export function getPageTitle(title?: string): string {
-  const appName = getAppName();
-  return title ? `${title} - ${appName}` : appName;
-}
