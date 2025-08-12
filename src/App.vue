@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
+import { useQuasar } from "quasar";
 import { initializeRouteManager } from "./composables/useRouteManager";
 import { useCurrentRoute } from "./composables/useCurrentRoute";
 import { useNavigation } from "./composables/useNavigation";
@@ -7,7 +8,12 @@ import { useGlobalState } from "./composables/useGlobalState";
 import { setPageTitle } from "./utils/app-config";
 import { RouteMeta } from "./types/route-meta";
 
-const leftDrawerOpen = ref(false);
+const $q = useQuasar();
+
+// Whether it is desktop mode (screen width greater than or equal to 1024px)
+const isDesktop = computed(() => $q.screen.gt.md);
+
+const leftDrawerOpen = ref(isDesktop.value);
 
 // Initialize route manager once
 const { menuRoutes } = initializeRouteManager();
@@ -37,7 +43,8 @@ function toggleLeftDrawer() {
 function navigateTo(path: string) {
   // Use global router navigation
   goTo(path);
-  leftDrawerOpen.value = false; // Close drawer after navigation
+  // Keep left drawer open on desktop, close on mobile
+  leftDrawerOpen.value = isDesktop.value;
 }
 
 // Check if current route is active
