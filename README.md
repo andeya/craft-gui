@@ -42,11 +42,12 @@ pnpm build
 
 ## Tech Stack
 
-- **Frontend Framework**: Vue 3
-- **UI Framework**: Quasar
-- **Desktop Framework**: Tauri
-- **Build Tool**: Vite
-- **Package Manager**: pnpm
+- **Frontend Framework**: [Vue 3](https://vuejs.org/guide/quick-start)
+- **UI Framework**: [Quasar](https://quasar.dev/start/quick-start)
+- **CSS Components**: [Tailwind CSS 3](https://v3.tailwindcss.com/docs/installation)
+- **Cross Framework**: [Tauri](https://tauri.app/start/)
+- **Build Tool**: [Vite](https://vite.dev/guide/)
+- **Package Manager**: [pnpm](https://pnpm.io/)
 
 ## Getting Started
 
