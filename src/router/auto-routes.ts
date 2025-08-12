@@ -6,8 +6,8 @@ import type {
   PageComponent,
   RouteGroupInfo,
   RouteInfo,
-} from "../types/route-meta";
-import { getAppName } from "../utils/app-config";
+} from "@/types/route-meta";
+import { getAppName } from "@/utils/app-config";
 
 // Auto-import all Vue files in pages directory
 const modules = import.meta.glob("../pages/**/*.vue", {
@@ -15,6 +15,7 @@ const modules = import.meta.glob("../pages/**/*.vue", {
 }) as Record<string, PageComponent>;
 
 const defaultGroupTitle = "DEFAULT";
+const defaultGroupOrder = -1;
 
 // route configuration
 export const routes = ((): RouteRecordRaw[] => {
@@ -152,6 +153,13 @@ export const routes = ((): RouteRecordRaw[] => {
     }
   }
 
+  // Set default group order for routes in default group
+  routes.forEach((route) => {
+    if (route.meta?.groupTitle === defaultGroupTitle) {
+      route.meta.groupOrder = defaultGroupOrder;
+    }
+  });
+
   // Enhanced route sorting with proper priority order
   // This ensures Vue Router matches routes in the correct order:
   // 1. Root route (/) - highest priority
@@ -246,7 +254,7 @@ function getRouteInfo(routes: RouteRecordRaw[]): RouteGroupInfo[] {
       if (a.title === defaultGroupTitle) return -1;
       if (b.title === defaultGroupTitle) return 1;
       if (a.order !== b.order) {
-        return 0;
+        return a.order - b.order;
       }
       return a.title.localeCompare(b.title);
     });

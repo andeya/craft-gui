@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { useQuasar } from "quasar";
 import { useRoute } from "vue-router";
-import { router, menuRouteGroupInfos } from "./router/auto-routes";
+import { router, menuRouteGroupInfos } from "@/router/auto-routes";
 
 const $q = useQuasar();
 

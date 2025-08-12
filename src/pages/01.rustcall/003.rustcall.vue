@@ -17,7 +17,7 @@
           <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
         </a>
         <a href="https://vuejs.org/" target="_blank">
-          <img src="../assets/vue.svg" class="logo vue" alt="Vue logo" />
+          <img src="@/assets/vue.svg" class="logo vue" alt="Vue logo" />
         </a>
       </div>
       <div class="text-center q-mb-lg">

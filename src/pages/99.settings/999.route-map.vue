@@ -59,11 +59,10 @@
           <div class="text-h6">
             {{ group.title }} ({{ group.routes.length }} routes)
             <q-chip
-              v-if="group.order !== 0"
               :label="`Order: ${group.order}`"
               color="primary"
               size="sm"
-              class="q-ml-sm"
+              class="q-ml-sm text-white"
             />
           </div>
           <q-table
@@ -122,8 +121,8 @@ import {
   findRouteByPath,
   checkRouteExists,
   getRoutesByDepth,
-} from "../composables/route";
-import { routes, menuRoutes, routeGroupInfos } from "../router/auto-routes";
+} from "@/composables/route";
+import { routes, menuRoutes, routeGroupInfos } from "@/router/auto-routes";
 
 const depth1Routes = getRoutesByDepth(1);
 
