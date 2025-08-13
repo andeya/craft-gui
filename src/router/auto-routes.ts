@@ -34,9 +34,7 @@ export const routes = ((): RouteRecordRaw[] => {
     const filePathMeta = parseFilePathMeta(path);
 
     // Generate route path from file path, but use cleanName for the final segment
-    let routePath = filePathMeta.innerPath
-      .replace(/\.vue$/, "") // Remove .vue extension
-      .replace(/\/index$/, ""); // Convert /index to root path
+    let routePath = filePathMeta.cleanInnerPath.replace(/\/index$/, ""); // Convert /index to root path
 
     // If the filename had a prefix, replace the filename part with cleanName
     if (filePathMeta.filename !== filePathMeta.cleanName + ".vue") {
@@ -57,8 +55,7 @@ export const routes = ((): RouteRecordRaw[] => {
     }
     // Generate route name
     const routeName =
-      filePathMeta.innerPath
-        .replace(/\.vue$/, "")
+      filePathMeta.cleanInnerPath
         .replace(/\/index$/, "")
         .replace(/\//g, "-")
         .replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
@@ -261,7 +258,7 @@ function getRouteInfo(routes: RouteRecordRaw[]): RouteGroupInfo[] {
 }
 
 interface FilePathMeta {
-  innerPath: string;
+  cleanInnerPath: string;
   filegroup: string;
   filename: string;
   groupOrder: number;
@@ -279,15 +276,18 @@ function parseFilePathMeta(filepath: string): FilePathMeta {
   const parts = innerPath.split("/");
 
   // Extract filepath from path
-  const filegroup = parts.length > 1 ? parts[0] : "";
-  const filegroupPrefixMatch = filegroup.match(/^(\d+)\.(.+)$/);
-
-  let filegroupName = filegroup;
+  let filegroupName = "";
   let filegroupOrder = 0;
-  if (filegroupPrefixMatch) {
-    filegroupOrder = parseInt(filegroupPrefixMatch[1], 10);
-    filegroupName = filegroupPrefixMatch[2];
+  if (parts.length > 1) {
+    filegroupName = parts[0];
+    const filegroupPrefixMatch = filegroupName.match(/^(\d+)\.(.+)$/);
+    if (filegroupPrefixMatch) {
+      filegroupOrder = parseInt(filegroupPrefixMatch[1], 10);
+      filegroupName = filegroupPrefixMatch[2];
+    }
+    parts[0] = filegroupName;
   }
+  let cleanInnerPath = parts.join("/");
 
   // Extract filename from path
   const filename = parts.pop() || "";
@@ -306,9 +306,11 @@ function parseFilePathMeta(filepath: string): FilePathMeta {
     cleanName = namePrefixMatch[2];
     showInMenu = true;
   }
+  parts.push(cleanName);
+  cleanInnerPath = parts.join("/");
 
   return {
-    innerPath: innerPath,
+    cleanInnerPath: cleanInnerPath,
     filegroup: filegroupName,
     groupOrder: filegroupOrder,
     filename: filename,
