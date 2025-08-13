@@ -134,6 +134,7 @@ import { ref, onMounted, watch, computed, nextTick } from "vue";
 import { useQuasar } from "quasar";
 import { invoke } from "@tauri-apps/api/core";
 import ConfigField from "@/components/ConfigField.vue";
+import TOML from "smol-toml";
 
 // State
 const schema = ref(null);
@@ -278,8 +279,8 @@ const isNestedFieldModified = (parentKey, childKey) => {
 onMounted(async () => {
   try {
     const [configSchema, currentConfig] = await Promise.all([
-      invoke("get_config_schema"),
-      invoke("get_current_config"),
+      invoke("cfg_cmd_get_schema"),
+      invoke("cfg_cmd_get_data"),
     ]);
 
     schema.value = configSchema;
@@ -327,7 +328,7 @@ const resetConfig = () => {
     cancel: true,
     persistent: true,
   }).onOk(() => {
-    invoke("get_current_config")
+    invoke("cfg_cmd_get_data")
       .then((resetData) => {
         formData.value = resetData;
         originalData.value = JSON.parse(JSON.stringify(resetData));
@@ -349,7 +350,7 @@ const resetConfig = () => {
 };
 
 const saveConfig = () => {
-  invoke("save_config", { config: formData.value })
+  invoke("cfg_cmd_save_data", { config: formData.value })
     .then(() => {
       $q.notify({
         type: "positive",
@@ -368,14 +369,25 @@ const saveConfig = () => {
     });
 };
 
-const copyToClipboard = () => {
-  $q.Clipboard.copy(tomlPreview.value);
-  $q.notify({
-    type: "positive",
-    message: "Configuration copied to clipboard",
-    position: "top",
-    timeout: 2000,
-  });
+const copyToClipboard = async () => {
+  try {
+    // Use native clipboard API
+    await navigator.clipboard.writeText(TOML.stringify(formData.value));
+    $q.notify({
+      type: "positive",
+      message: "Configuration copied to clipboard",
+      position: "top",
+      timeout: 2000,
+    });
+  } catch (error) {
+    console.error("Failed to copy to clipboard:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to copy to clipboard",
+      position: "top",
+      timeout: 2000,
+    });
+  }
 };
 </script>
 

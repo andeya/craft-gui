@@ -1,8 +1,10 @@
-use std::io::Write;
-use std::{path::PathBuf, sync::OnceLock};
-
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::{
+  path::PathBuf,
+  sync::{Arc, OnceLock},
+};
+use tokio::sync::RwLock;
 
 /// Application configuration root structure
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
@@ -86,63 +88,70 @@ impl Default for AppConfig {
 
 /// Tauri command to get the JSON schema for configuration validation
 #[tauri::command]
-pub fn get_config_schema() -> schemars::Schema {
+pub fn cfg_cmd_get_schema() -> schemars::Schema {
   schemars::schema_for!(AppConfig)
 }
 
 /// Tauri command to get the current configuration values
 #[tauri::command]
-pub fn get_current_config() -> Result<AppConfig, String> {
-  let config_path = CONFIG_FILE.get().unwrap();
-  let config =
-    std::fs::read(config_path).map_err(|e| format!("Failed to read config file: {}", e))?;
-  let config: AppConfig =
-    toml::from_slice(&config).map_err(|e| format!("Failed to parse config file: {}", e))?;
+pub async fn cfg_cmd_get_data() -> Result<Arc<AppConfig>, String> {
+  let config = load_config().await?;
+  set_config(config.clone()).await;
   Ok(config)
 }
 
 /// Tauri command to save configuration with validation
 #[tauri::command()]
-pub fn save_config(config: AppConfig) -> Result<(), String> {
-  let config_path = CONFIG_FILE.get().unwrap();
-  let config =
-    toml::to_string_pretty(&config).map_err(|e| format!("Failed to serialize config: {}", e))?;
-  std::fs::write(config_path, config).map_err(|e| format!("Failed to write config file: {}", e))?;
+pub async fn cfg_cmd_save_data(config: Arc<AppConfig>) -> Result<(), String> {
+  save_config(&config).await?;
+  set_config(config).await;
   Ok(())
 }
 
-static CONFIG_FILE: OnceLock<PathBuf> = OnceLock::new();
+static CONFIG_PATH: OnceLock<PathBuf> = OnceLock::new();
 
-pub fn setup(dir: PathBuf) -> anyhow::Result<()> {
-  let _ = CONFIG_FILE
+pub async fn setup(dir: PathBuf) -> anyhow::Result<()> {
+  let _ = CONFIG_PATH
     .set(dir.clone().join("config.toml"))
     .map_err(|e| anyhow::anyhow!("Failed to set config file path: {}", e.to_string_lossy()));
-  let config_path = CONFIG_FILE.get().unwrap();
-  if !config_path.exists() {
-    std::fs::create_dir_all(&dir)
-      .map_err(|e| anyhow::anyhow!("Failed to create config directory {}: {}", dir.display(), e))?;
-    let mut file = std::fs::File::create(config_path).map_err(|e| {
-      anyhow::anyhow!(
-        "Failed to create config file {}: {}",
-        config_path.display(),
-        e
-      )
-    })?;
-    let config = AppConfig::default();
-    let config = toml::to_string_pretty(&config).map_err(|e| {
-      anyhow::anyhow!(
-        "Failed to serialize config {}: {}",
-        config_path.display(),
-        e
-      )
-    })?;
-    file.write_all(config.as_bytes()).map_err(|e| {
-      anyhow::anyhow!(
-        "Failed to write config file {}: {}",
-        config_path.display(),
-        e
-      )
-    })?;
-  }
+  let config_path = CONFIG_PATH.get().unwrap();
+
+  let config: Arc<AppConfig> = if !config_path.exists() {
+    let config = Arc::new(AppConfig::default());
+    save_config(&config).await.map_err(|e| anyhow::anyhow!(e))?;
+    config
+  } else {
+    load_config().await.map_err(|e| anyhow::anyhow!(e))?
+  };
+  CONFIG
+    .set(RwLock::new(config))
+    .map_err(|_| anyhow::anyhow!("Failed to set config"))
+}
+
+static CONFIG: OnceLock<RwLock<Arc<AppConfig>>> = OnceLock::new();
+
+pub async fn get_config() -> Arc<AppConfig> {
+  CONFIG.get().unwrap().read().await.clone()
+}
+
+async fn set_config(config: Arc<AppConfig>) {
+  *CONFIG.get().unwrap().write().await = config;
+}
+
+async fn load_config() -> Result<Arc<AppConfig>, String> {
+  let config_path = CONFIG_PATH.get().unwrap();
+  let config =
+    std::fs::read(config_path).map_err(|e| format!("Failed to read config file: {}", e))?;
+  let config: AppConfig =
+    toml::from_slice(&config).map_err(|e| format!("Failed to parse config file: {}", e))?;
+  Ok(Arc::new(config))
+}
+
+async fn save_config(config: &AppConfig) -> Result<(), String> {
+  let config_path = CONFIG_PATH.get().unwrap();
+  let config_str =
+    toml::to_string_pretty(config).map_err(|e| format!("Failed to serialize config: {}", e))?;
+  std::fs::write(config_path, config_str)
+    .map_err(|e| format!("Failed to write config file: {}", e))?;
   Ok(())
 }

@@ -1,4 +1,5 @@
 mod config;
+pub use config::get_config;
 
 #[allow(unused_imports)]
 use tauri::Manager;
@@ -15,9 +16,9 @@ pub fn run() {
     })
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
-      config::get_config_schema,
-      config::get_current_config,
-      config::save_config,
+      config::cfg_cmd_get_schema,
+      config::cfg_cmd_get_data,
+      config::cfg_cmd_save_data,
       greet,
     ])
     .run(tauri::generate_context!())
@@ -35,7 +36,7 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
       app.app_handle().path().app_data_dir().unwrap().display()
     );
   }
-  if let Err(e) = config::setup(app.app_handle().path().app_data_dir().unwrap()) {
+  if let Err(e) = config::setup(app.app_handle().path().app_data_dir().unwrap()).await {
     log::error!("Failed to setup config: {}", e);
   }
 }
