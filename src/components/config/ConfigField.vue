@@ -1,13 +1,5 @@
 <template>
-  <div
-    class="config-field"
-    :class="{ 'field-modified': isThisFieldModified }"
-    :style="
-      isThisFieldModified
-        ? 'border-left: 4px solid #ffc107 !important; padding-left: 12px !important; border-radius: 4px !important; background-color: #fff3cd !important;'
-        : ''
-    "
-  >
+  <div class="config-field" :class="{ 'field-modified': isThisFieldModified }">
     <q-form @submit="onSubmit">
       <!-- Field Label and Description -->
       <div class="field-header">
@@ -665,58 +657,5 @@ const fieldName = computed(() => {
   border: 1px solid #fecaca;
   border-radius: 4px;
   padding: 8px 12px;
-}
-
-/* Completely remove all input field styling - use more aggressive selectors */
-.field-modified ::v-deep(.q-field),
-.field-modified ::v-deep(.q-field--focused),
-.field-modified ::v-deep(.q-field--error),
-.field-modified ::v-deep(.q-field__control),
-.field-modified ::v-deep(.q-field__native),
-.field-modified ::v-deep(.q-toggle),
-.field-modified ::v-deep(.q-toggle__track),
-.field-modified ::v-deep(.q-select),
-.field-modified ::v-deep(.q-select__control) {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Remove any additional borders or backgrounds */
-.field-modified ::v-deep(*) {
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  background: transparent !important;
-}
-
-/* Ensure only the parent container has the left border */
-.config-field.field-modified {
-  border-left: 4px solid #ffc107 !important;
-  padding-left: 12px !important;
-  border-radius: 4px !important;
-  background-color: #fff3cd !important;
-}
-
-/* Remove all other borders from child elements */
-.config-field.field-modified ::v-deep(.q-field),
-.config-field.field-modified ::v-deep(.q-field__control),
-.config-field.field-modified ::v-deep(.q-field__native),
-.config-field.field-modified ::v-deep(.q-toggle),
-.config-field.field-modified ::v-deep(.q-toggle__track),
-.config-field.field-modified ::v-deep(.q-select),
-.config-field.field-modified ::v-deep(.q-select__control),
-.config-field.field-modified ::v-deep(.q-input),
-.config-field.field-modified ::v-deep(.q-textarea) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
 }
 </style>
