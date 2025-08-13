@@ -75,12 +75,12 @@
 
               <!-- Simple Form Fields -->
               <div
-                v-for="(prop, key) in schema.properties"
+                v-for="key in Object.keys(formData)"
                 :key="key"
                 class="q-mb-md"
               >
                 <config-field
-                  :schema="prop"
+                  :schema="schema.properties[key]"
                   :root-schema="schema"
                   :model-value="formData[key]"
                   :show-advanced="showAdvanced"
@@ -155,24 +155,11 @@ const canSave = computed(() => {
 });
 
 // TOML conversion function with modification highlighting
-const convertToToml = (
-  obj,
-  prefix = "",
-  modifiedPaths = new Set(),
-  schema = null
-) => {
+const convertToToml = (obj, prefix = "", modifiedPaths = new Set()) => {
   let toml = "";
 
-  // Get the order of properties from schema if available
-  let propertyOrder = [];
-  if (schema && schema.properties) {
-    propertyOrder = Object.keys(schema.properties);
-  } else {
-    propertyOrder = Object.keys(obj);
-  }
-
-  // Use schema order, but include any additional properties from obj
-  const allKeys = [...new Set([...propertyOrder, ...Object.keys(obj)])];
+  // Use object's own property order
+  const allKeys = Object.keys(obj);
 
   for (const key of allKeys) {
     const value = obj[key];
@@ -184,13 +171,11 @@ const convertToToml = (
       ? ` style="background-color: #fff3cd !important; border-left: 3px solid #ffc107 !important; padding: 2px 4px !important; border-radius: 3px !important; display: inline-block !important; margin: 2px 0 !important;"`
       : "";
 
-    const nestedSchema = schema?.properties?.[key];
-
     if (value === null || value === undefined) {
       toml += `<span${modifiedStyle}># ${key} = null</span>\n`;
     } else if (typeof value === "object" && !Array.isArray(value)) {
       toml += `\n<span class="section">[${fullKey}]</span>\n`;
-      toml += convertToToml(value, fullKey, modifiedPaths, nestedSchema);
+      toml += convertToToml(value, fullKey, modifiedPaths);
     } else if (Array.isArray(value)) {
       if (value.length === 0) {
         toml += `<span${modifiedStyle}><span class="key">${key}</span> = []</span>\n`;
@@ -302,12 +287,7 @@ watch(
   ([newFormData, newOriginalData]) => {
     try {
       const modifiedPaths = getModifiedPaths();
-      const tomlHtml = convertToToml(
-        newFormData,
-        "",
-        modifiedPaths,
-        schema.value
-      );
+      const tomlHtml = convertToToml(newFormData, "", modifiedPaths);
       tomlPreview.value = tomlHtml;
     } catch (error) {
       tomlPreview.value = `Error generating TOML: ${error.message}`;
@@ -350,23 +330,30 @@ const resetConfig = () => {
 };
 
 const saveConfig = () => {
-  invoke("cfg_cmd_save_data", { config: formData.value })
-    .then(() => {
-      $q.notify({
-        type: "positive",
-        message: "Configuration saved successfully",
-        position: "top",
+  $q.dialog({
+    title: "Save Configuration",
+    message: "Are you sure you want to save the current configuration?",
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    invoke("cfg_cmd_save_data", { config: formData.value })
+      .then(() => {
+        $q.notify({
+          type: "positive",
+          message: "Configuration saved successfully",
+          position: "top",
+        });
+        // Update original data after successful save
+        originalData.value = JSON.parse(JSON.stringify(formData.value));
+      })
+      .catch((error) => {
+        $q.notify({
+          type: "negative",
+          message: `Failed to save configuration: ${error}`,
+          position: "top",
+        });
       });
-      // Update original data after successful save
-      originalData.value = JSON.parse(JSON.stringify(formData.value));
-    })
-    .catch((error) => {
-      $q.notify({
-        type: "negative",
-        message: `Failed to save configuration: ${error}`,
-        position: "top",
-      });
-    });
+  });
 };
 
 const copyToClipboard = async () => {
