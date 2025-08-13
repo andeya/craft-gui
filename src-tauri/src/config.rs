@@ -12,23 +12,23 @@ use tokio::sync::RwLock;
 #[schemars(title = "Application Configuration")]
 pub struct AppConfig {
   /// Logging system configuration
-  logging: LoggingConfig,
+  pub logging: LoggingConfig,
 
   /// Feature flags and limitations
-  features: FeaturesConfig,
+  pub features: FeaturesConfig,
 }
 
 /// Logging system configuration
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[schemars(title = "Logging Configuration")]
-struct LoggingConfig {
+pub struct LoggingConfig {
   /// Verbosity level for logging
   #[schemars(
         title = "Log Level",
         example = LogLevel::Info,
         description = "Logging verbosity level"
     )]
-  level: LogLevel,
+  pub level: LogLevel,
 
   /// Enable or disable file logging
   #[schemars(
@@ -36,11 +36,11 @@ struct LoggingConfig {
     example = true,
     description = "Whether to write logs to a file"
   )]
-  file_logging: bool,
+  pub file_logging: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
-enum LogLevel {
+pub enum LogLevel {
   Trace,
   Debug,
   Info,
@@ -51,14 +51,14 @@ enum LogLevel {
 /// Feature flags and operational limits
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[schemars(title = "Feature Configuration")]
-struct FeaturesConfig {
+pub struct FeaturesConfig {
   /// Enable dark mode UI
   #[schemars(
     title = "Dark Mode Enabled",
     example = false,
     description = "Whether to use dark mode for the user interface"
   )]
-  dark_mode: bool,
+  pub dark_mode: bool,
 
   /// Maximum number of concurrent operations
   #[schemars(
@@ -67,7 +67,7 @@ struct FeaturesConfig {
     example = 8,
     description = "Maximum number of simultaneous operations (1-32)"
   )]
-  max_concurrent: u8,
+  pub max_concurrent: u8,
 }
 
 /// Default configuration values
