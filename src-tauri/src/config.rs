@@ -117,6 +117,8 @@ pub async fn setup(dir: PathBuf) -> anyhow::Result<()> {
   let config_path = CONFIG_PATH.get().unwrap();
 
   let config: Arc<AppConfig> = if !config_path.exists() {
+    std::fs::create_dir_all(dir)
+      .map_err(|e| anyhow::anyhow!("Failed to create config directory: {}", e))?;
     let config = Arc::new(AppConfig::default());
     save_config(&config).await.map_err(|e| anyhow::anyhow!(e))?;
     config

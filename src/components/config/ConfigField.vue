@@ -668,15 +668,15 @@ const fieldName = computed(() => {
 }
 
 /* Completely remove all input field styling - use more aggressive selectors */
-.field-modified :deep(.q-field),
-.field-modified :deep(.q-field--focused),
-.field-modified :deep(.q-field--error),
-.field-modified :deep(.q-field__control),
-.field-modified :deep(.q-field__native),
-.field-modified :deep(.q-toggle),
-.field-modified :deep(.q-toggle__track),
-.field-modified :deep(.q-select),
-.field-modified :deep(.q-select__control) {
+.field-modified ::v-deep(.q-field),
+.field-modified ::v-deep(.q-field--focused),
+.field-modified ::v-deep(.q-field--error),
+.field-modified ::v-deep(.q-field__control),
+.field-modified ::v-deep(.q-field__native),
+.field-modified ::v-deep(.q-toggle),
+.field-modified ::v-deep(.q-toggle__track),
+.field-modified ::v-deep(.q-select),
+.field-modified ::v-deep(.q-select__control) {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -684,7 +684,7 @@ const fieldName = computed(() => {
 }
 
 /* Remove any additional borders or backgrounds */
-.field-modified :deep(*) {
+.field-modified ::v-deep(*) {
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -701,15 +701,15 @@ const fieldName = computed(() => {
 }
 
 /* Remove all other borders from child elements */
-.config-field.field-modified :deep(.q-field),
-.config-field.field-modified :deep(.q-field__control),
-.config-field.field-modified :deep(.q-field__native),
-.config-field.field-modified :deep(.q-toggle),
-.config-field.field-modified :deep(.q-toggle__track),
-.config-field.field-modified :deep(.q-select),
-.config-field.field-modified :deep(.q-select__control),
-.config-field.field-modified :deep(.q-input),
-.config-field.field-modified :deep(.q-textarea) {
+.config-field.field-modified ::v-deep(.q-field),
+.config-field.field-modified ::v-deep(.q-field__control),
+.config-field.field-modified ::v-deep(.q-field__native),
+.config-field.field-modified ::v-deep(.q-toggle),
+.config-field.field-modified ::v-deep(.q-toggle__track),
+.config-field.field-modified ::v-deep(.q-select),
+.config-field.field-modified ::v-deep(.q-select__control),
+.config-field.field-modified ::v-deep(.q-input),
+.config-field.field-modified ::v-deep(.q-textarea) {
   border: none !important;
   border-left: none !important;
   border-right: none !important;
