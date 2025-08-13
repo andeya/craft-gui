@@ -29,8 +29,7 @@ function isActive(path: string) {
   return currentRoute.path === path;
 }
 
-// Show console access information
-console.log("🌐 Global Router Object Available: $router");
+
 </script>
 
 <template>

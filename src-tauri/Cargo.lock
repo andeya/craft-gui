@@ -6,14 +6,17 @@ version = 4
 name = "CraftGUI"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "env_logger",
  "log",
+ "schemars 1.0.4",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
  "tokio",
+ "toml 0.9.5",
 ]
 
 [[package]]
@@ -122,9 +125,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.97"
+version = "1.0.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
+checksum = "b0674a1ddeecb70197781e945de4b3b8ffb61fa939a5597bcf48503737663100"
 
 [[package]]
 name = "async-broadcast"
@@ -498,7 +501,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02260d489095346e5cafd04dea8e8cb54d1d74fcd759022a9b72986ebe9a1257"
 dependencies = [
  "serde",
- "toml",
+ "toml 0.8.20",
 ]
 
 [[package]]
@@ -897,7 +900,7 @@ dependencies = [
  "cc",
  "memchr",
  "rustc_version",
- "toml",
+ "toml 0.8.20",
  "vswhom",
  "winreg",
 ]
@@ -1622,7 +1625,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.60.1",
+ "windows-core",
 ]
 
 [[package]]
@@ -3033,6 +3036,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ref-cast"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a0ae411dbe946a674d89546582cea4ba2bb8defac896622d6496f14c23ba5cf"
+dependencies = [
+ "ref-cast-impl",
+]
+
+[[package]]
+name = "ref-cast-impl"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1165225c21bff1f3bbce98f5a1f889949bc902d3575308cc7b0de30b4f6d27c7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
+
+[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3169,7 +3192,7 @@ checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
 dependencies = [
  "dyn-clone",
  "indexmap 1.9.3",
- "schemars_derive",
+ "schemars_derive 0.8.22",
  "serde",
  "serde_json",
  "url",
@@ -3177,10 +3200,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "schemars"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82d20c4491bc164fa2f6c5d44565947a52ad80b9505d8e36f8d54c27c739fcd0"
+dependencies = [
+ "dyn-clone",
+ "ref-cast",
+ "schemars_derive 1.0.4",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "schemars_derive"
 version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32e265784ad618884abaea0600a9adf15393368d840e0222d101a072f3f7534d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.98",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33d020396d1d138dc19f1165df7545479dcd58d93810dc5d646a16e55abefa80"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3291,6 +3339,15 @@ name = "serde_spanned"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_spanned"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40734c41988f7306bb04f0ecf60ec0f3f1caa34290e4e8ea471dcd3346483b83"
 dependencies = [
  "serde",
 ]
@@ -3591,7 +3648,7 @@ dependencies = [
  "cfg-expr",
  "heck 0.5.0",
  "pkg-config",
- "toml",
+ "toml 0.8.20",
  "version-compare",
 ]
 
@@ -3629,7 +3686,7 @@ dependencies = [
  "unicode-segmentation",
  "url",
  "windows",
- "windows-core 0.61.2",
+ "windows-core",
  "windows-version",
  "x11-dl",
 ]
@@ -3713,13 +3770,13 @@ dependencies = [
  "glob",
  "heck 0.5.0",
  "json-patch",
- "schemars",
+ "schemars 0.8.22",
  "semver",
  "serde",
  "serde_json",
  "tauri-utils",
  "tauri-winres",
- "toml",
+ "toml 0.8.20",
  "walkdir",
 ]
 
@@ -3773,11 +3830,11 @@ dependencies = [
  "anyhow",
  "glob",
  "plist",
- "schemars",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "tauri-utils",
- "toml",
+ "toml 0.8.20",
  "walkdir",
 ]
 
@@ -3792,7 +3849,7 @@ dependencies = [
  "objc2-app-kit",
  "objc2-foundation 0.3.0",
  "open",
- "schemars",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "tauri",
@@ -3875,7 +3932,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "schemars",
+ "schemars 0.8.22",
  "semver",
  "serde",
  "serde-untagged",
@@ -3883,7 +3940,7 @@ dependencies = [
  "serde_with",
  "swift-rs",
  "thiserror 2.0.11",
- "toml",
+ "toml 0.8.20",
  "url",
  "urlpattern",
  "uuid",
@@ -3897,7 +3954,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56eaa45f707bedf34d19312c26d350bc0f3c59a47e58e8adbeecdc850d2c13a0"
 dependencies = [
  "embed-resource",
- "toml",
+ "toml 0.8.20",
 ]
 
 [[package]]
@@ -4056,9 +4113,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd87a5cdd6ffab733b2f74bc4fd7ee5fff6634124999ac278c35fc78c6120148"
 dependencies = [
  "serde",
- "serde_spanned",
- "toml_datetime",
+ "serde_spanned 0.6.8",
+ "toml_datetime 0.6.8",
  "toml_edit 0.22.24",
+]
+
+[[package]]
+name = "toml"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75129e1dc5000bfbaa9fee9d1b21f974f9fbad9daec557a521ee6e080825f6e8"
+dependencies = [
+ "indexmap 2.7.1",
+ "serde",
+ "serde_spanned 1.0.0",
+ "toml_datetime 0.7.0",
+ "toml_parser",
+ "toml_writer",
+ "winnow 0.7.12",
 ]
 
 [[package]]
@@ -4071,13 +4143,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml_datetime"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bade1c3e902f58d73d3f294cd7f20391c1cb2fbcb643b73566bc773971df91e3"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "toml_edit"
 version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap 2.7.1",
- "toml_datetime",
+ "toml_datetime 0.6.8",
  "winnow 0.5.40",
 ]
 
@@ -4088,7 +4169,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "70f427fce4d84c72b5b732388bf4a9f4531b53f74e2887e3ecb2481f68f66d81"
 dependencies = [
  "indexmap 2.7.1",
- "toml_datetime",
+ "toml_datetime 0.6.8",
  "winnow 0.5.40",
 ]
 
@@ -4100,10 +4181,25 @@ checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
 dependencies = [
  "indexmap 2.7.1",
  "serde",
- "serde_spanned",
- "toml_datetime",
- "winnow 0.7.3",
+ "serde_spanned 0.6.8",
+ "toml_datetime 0.6.8",
+ "winnow 0.7.12",
 ]
+
+[[package]]
+name = "toml_parser"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b551886f449aa90d4fe2bdaa9f4a2577ad2dde302c61ecf262d80b116db95c10"
+dependencies = [
+ "winnow 0.7.12",
+]
+
+[[package]]
+name = "toml_writer"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc842091f2def52017664b53082ecbbeb5c7731092bad69d2c63050401dfd64"
 
 [[package]]
 name = "tower"
@@ -4544,8 +4640,8 @@ dependencies = [
  "webview2-com-macros",
  "webview2-com-sys",
  "windows",
- "windows-core 0.61.2",
- "windows-implement 0.60.0",
+ "windows-core",
+ "windows-implement",
  "windows-interface",
 ]
 
@@ -4568,7 +4664,7 @@ checksum = "36695906a1b53a3bf5c4289621efedac12b73eeb0b89e7e1a89b517302d5d75c"
 dependencies = [
  "thiserror 2.0.11",
  "windows",
- "windows-core 0.61.2",
+ "windows-core",
 ]
 
 [[package]]
@@ -4624,7 +4720,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9babd3a767a4c1aef6900409f85f5d53ce2544ccdfaa86dad48c91782c6d6893"
 dependencies = [
  "windows-collections",
- "windows-core 0.61.2",
+ "windows-core",
  "windows-future",
  "windows-link",
  "windows-numerics",
@@ -4636,20 +4732,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3beeceb5e5cfd9eb1d76b381630e82c4241ccd0d27f1a39ed41b2760b255c5e8"
 dependencies = [
- "windows-core 0.61.2",
-]
-
-[[package]]
-name = "windows-core"
-version = "0.60.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca21a92a9cae9bf4ccae5cf8368dce0837100ddf6e6d57936749e85f152f6247"
-dependencies = [
- "windows-implement 0.59.0",
- "windows-interface",
- "windows-link",
- "windows-result",
- "windows-strings 0.3.1",
+ "windows-core",
 ]
 
 [[package]]
@@ -4658,7 +4741,7 @@ version = "0.61.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0fdd3ddb90610c7638aa2b3a3ab2904fb9e5cdbecc643ddb3647212781c4ae3"
 dependencies = [
- "windows-implement 0.60.0",
+ "windows-implement",
  "windows-interface",
  "windows-link",
  "windows-result",
@@ -4671,20 +4754,9 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc6a41e98427b19fe4b73c550f060b59fa592d7d686537eebf9385621bfbad8e"
 dependencies = [
- "windows-core 0.61.2",
+ "windows-core",
  "windows-link",
  "windows-threading",
-]
-
-[[package]]
-name = "windows-implement"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83577b051e2f49a058c308f17f273b570a6a758386fc291b5f6a934dd84e48c1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.98",
 ]
 
 [[package]]
@@ -4721,7 +4793,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9150af68066c4c5c07ddc0ce30421554771e528bde427614c61038bc2c92c2b1"
 dependencies = [
- "windows-core 0.61.2",
+ "windows-core",
  "windows-link",
 ]
 
@@ -5070,9 +5142,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.7.3"
+version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e7f4ea97f6f78012141bcdb6a216b2609f0979ada50b20ca5b52dde2eac2bb1"
+checksum = "f3edebf492c8125044983378ecb5766203ad3b4c2f7a922bd7dd207f6d443e95"
 dependencies = [
  "memchr",
 ]
@@ -5147,7 +5219,7 @@ dependencies = [
  "webkit2gtk-sys",
  "webview2-com",
  "windows",
- "windows-core 0.61.2",
+ "windows-core",
  "windows-version",
  "x11-dl",
 ]
@@ -5236,7 +5308,7 @@ dependencies = [
  "tracing",
  "uds_windows",
  "windows-sys 0.59.0",
- "winnow 0.7.3",
+ "winnow 0.7.12",
  "xdg-home",
  "zbus_macros",
  "zbus_names",
@@ -5266,7 +5338,7 @@ checksum = "7be68e64bf6ce8db94f63e72f0c7eb9a60d733f7e0499e628dfab0f84d6bcb97"
 dependencies = [
  "serde",
  "static_assertions",
- "winnow 0.7.3",
+ "winnow 0.7.12",
  "zvariant",
 ]
 
@@ -5343,7 +5415,7 @@ dependencies = [
  "enumflags2",
  "serde",
  "static_assertions",
- "winnow 0.7.3",
+ "winnow 0.7.12",
  "zvariant_derive",
  "zvariant_utils",
 ]
@@ -5372,5 +5444,5 @@ dependencies = [
  "serde",
  "static_assertions",
  "syn 2.0.98",
- "winnow 0.7.3",
+ "winnow 0.7.12",
 ]
