@@ -23,7 +23,7 @@
                   icon="save"
                   color="primary"
                   label="Save Configuration"
-                  :disabled="!hasChanges"
+                  :disabled="!canSave"
                   @click="saveConfig"
                 />
               </div>
@@ -88,6 +88,8 @@
                   :parent-key="key"
                   :check-nested-modification="isNestedFieldModified"
                   @update:model-value="updateFormData(key, $event)"
+                  @validation-error="handleValidationError(key, $event)"
+                  @validation-success="handleValidationSuccess(key)"
                 />
               </div>
             </div>
@@ -142,6 +144,7 @@ const formData = ref({});
 const originalData = ref({}); // Store original data for comparison
 const tomlPreview = ref("");
 const showAdvanced = ref(false);
+const validationErrors = ref(new Map()); // Track validation errors for each field
 const $q = useQuasar();
 
 // Computed properties
@@ -149,9 +152,14 @@ const hasChanges = computed(() => {
   return JSON.stringify(formData.value) !== JSON.stringify(originalData.value);
 });
 
+// Check if there are any validation errors
+const hasValidationErrors = computed(() => {
+  return validationErrors.value.size > 0;
+});
+
 // Check if save button should be enabled
 const canSave = computed(() => {
-  return hasChanges.value;
+  return hasChanges.value && !hasValidationErrors.value;
 });
 
 // TOML conversion function with modification highlighting
@@ -298,7 +306,23 @@ watch(
 
 // Event handlers
 const updateFormData = (key, value) => {
+  // Only update form data if validation passed (ConfigField will only emit when valid)
   formData.value[key] = value;
+};
+
+// Handle validation errors from child components
+const handleValidationError = (key, error) => {
+  // Use the parent key (top-level field) for validation errors
+  // This ensures consistency with the form structure
+  const errorKey = key;
+  validationErrors.value.set(errorKey, error);
+};
+
+// Handle validation success from child components
+const handleValidationSuccess = (key) => {
+  // Use the parent key (top-level field) for validation errors
+  const errorKey = key;
+  validationErrors.value.delete(errorKey);
 };
 
 const resetConfig = () => {
@@ -312,6 +336,8 @@ const resetConfig = () => {
       .then((resetData) => {
         formData.value = resetData;
         originalData.value = JSON.parse(JSON.stringify(resetData));
+        // Clear validation errors after reset
+        validationErrors.value.clear();
         $q.notify({
           type: "positive",
           message: "Configuration reset successfully",
@@ -330,6 +356,16 @@ const resetConfig = () => {
 };
 
 const saveConfig = () => {
+  // Check for validation errors before saving
+  if (hasValidationErrors.value) {
+    $q.notify({
+      type: "negative",
+      message: "Please fix validation errors before saving",
+      position: "top",
+    });
+    return;
+  }
+
   $q.dialog({
     title: "Save Configuration",
     message: "Are you sure you want to save the current configuration?",

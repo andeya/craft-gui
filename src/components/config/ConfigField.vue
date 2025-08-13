@@ -196,6 +196,8 @@
               :is-modified="isNestedFieldModified(key)"
               :check-nested-modification="props.checkNestedModification"
               @update:model-value="updateNestedValue(key, $event)"
+              @validation-error="handleNestedValidationError(key, $event)"
+              @validation-success="handleNestedValidationSuccess(key)"
             />
           </div>
         </div>
@@ -250,7 +252,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, nextTick } from "vue";
 
 const props = defineProps({
   schema: {
@@ -283,29 +285,28 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:model-value"]);
+const emit = defineEmits([
+  "update:model-value",
+  "validation-error",
+  "validation-success",
+]);
 
-// Internal value for two-way binding
+// Internal state
 const internalValue = ref(props.modelValue);
-
-// String representations for objects and arrays
 const objectStringValue = ref("");
 const arrayStringValue = ref("");
-
-// Validation state
 const validationError = ref("");
 
-// Function to resolve $ref references
+// Schema resolution function
 const resolveSchemaRef = (schema, rootSchema) => {
   if (!schema || !rootSchema) return schema;
 
   if (schema.$ref) {
     const refPath = schema.$ref;
     if (refPath.startsWith("#/$defs/")) {
-      const defName = refPath.substring(8); // Remove '#/$defs/'
+      const defName = refPath.substring(8);
       const resolved = rootSchema.$defs?.[defName];
       if (resolved) {
-        // Merge the resolved schema with the original schema (keeping title, description, etc.)
         return { ...resolved, ...schema };
       }
     }
@@ -314,12 +315,11 @@ const resolveSchemaRef = (schema, rootSchema) => {
   return schema;
 };
 
-// Computed property for resolved schema
+// Computed properties
 const resolvedSchema = computed(() => {
   return resolveSchemaRef(props.schema, props.rootSchema);
 });
 
-// Check if field has advanced information to show
 const hasAdvancedInfo = computed(() => {
   const schema = resolvedSchema.value;
   return (
@@ -335,7 +335,6 @@ const hasAdvancedInfo = computed(() => {
   );
 });
 
-// Check if field has validation rules
 const hasValidationRules = computed(() => {
   const schema = resolvedSchema.value;
   return (
@@ -345,6 +344,45 @@ const hasValidationRules = computed(() => {
     schema.maxLength !== undefined ||
     schema.pattern
   );
+});
+
+const isObjectType = computed(() => {
+  const value =
+    props.modelValue !== undefined
+      ? props.modelValue
+      : resolvedSchema.value.default;
+  return (
+    resolvedSchema.value.type === "object" ||
+    (typeof value === "object" && value !== null && !Array.isArray(value))
+  );
+});
+
+const isArrayType = computed(() => {
+  const value =
+    props.modelValue !== undefined
+      ? props.modelValue
+      : resolvedSchema.value.default;
+  return resolvedSchema.value.type === "array" || Array.isArray(value);
+});
+
+const isKnownType = computed(() => {
+  return (
+    resolvedSchema.value.type === "string" ||
+    resolvedSchema.value.type === "integer" ||
+    resolvedSchema.value.type === "boolean" ||
+    isObjectType.value ||
+    isArrayType.value
+  );
+});
+
+const isThisFieldModified = computed(() => {
+  return props.isModified;
+});
+
+const fieldName = computed(() => {
+  return resolvedSchema.value.title
+    ? resolvedSchema.value.title
+    : resolvedSchema.value.$id?.split("/").pop() || "Field";
 });
 
 // Validation rules for Quasar inputs
@@ -421,41 +459,10 @@ const validationRules = computed(() => {
   return rules;
 });
 
-// Computed properties for type checking
-const isObjectType = computed(() => {
-  const value =
-    props.modelValue !== undefined
-      ? props.modelValue
-      : resolvedSchema.value.default;
-  return (
-    resolvedSchema.value.type === "object" ||
-    (typeof value === "object" && value !== null && !Array.isArray(value))
-  );
-});
-
-const isArrayType = computed(() => {
-  const value =
-    props.modelValue !== undefined
-      ? props.modelValue
-      : resolvedSchema.value.default;
-  return resolvedSchema.value.type === "array" || Array.isArray(value);
-});
-
-const isKnownType = computed(() => {
-  return (
-    resolvedSchema.value.type === "string" ||
-    resolvedSchema.value.type === "integer" ||
-    resolvedSchema.value.type === "boolean" ||
-    isObjectType.value ||
-    isArrayType.value
-  );
-});
-
-// Sync internal value with prop
+// Watch for prop changes and sync internal state
 watch(
   () => props.modelValue,
   (newValue) => {
-    // Use default value if modelValue is undefined
     const value =
       newValue !== undefined ? newValue : resolvedSchema.value.default;
     internalValue.value = value;
@@ -474,11 +481,14 @@ watch(
         arrayStringValue.value = String(value);
       }
     }
+
+    // Don't validate here since this is just syncing from parent
+    // Validation should only happen on user input
   },
   { immediate: true }
 );
 
-// Validation function
+// Core validation function
 const validateField = () => {
   const value = internalValue.value;
   const schema = resolvedSchema.value;
@@ -492,11 +502,13 @@ const validateField = () => {
     (value === null || value === undefined || value === "")
   ) {
     validationError.value = "This field is required";
+    emit("validation-error", validationError.value);
     return false;
   }
 
   // Skip validation if value is empty and not required
   if (value === null || value === undefined || value === "") {
+    emit("validation-success");
     return true;
   }
 
@@ -504,21 +516,25 @@ const validateField = () => {
   if (schema.type === "string") {
     if (schema.minLength !== undefined && value.length < schema.minLength) {
       validationError.value = `Minimum length is ${schema.minLength}`;
+      emit("validation-error", validationError.value);
       return false;
     }
     if (schema.maxLength !== undefined && value.length > schema.maxLength) {
       validationError.value = `Maximum length is ${schema.maxLength}`;
+      emit("validation-error", validationError.value);
       return false;
     }
     if (schema.pattern) {
       const regex = new RegExp(schema.pattern);
       if (!regex.test(value)) {
         validationError.value = `Must match pattern: ${schema.pattern}`;
+        emit("validation-error", validationError.value);
         return false;
       }
     }
     if (schema.enum && !schema.enum.includes(value)) {
       validationError.value = `Must be one of: ${schema.enum.join(", ")}`;
+      emit("validation-error", validationError.value);
       return false;
     }
   }
@@ -528,55 +544,79 @@ const validateField = () => {
     const numValue = Number(value);
     if (isNaN(numValue)) {
       validationError.value = "Must be a valid number";
+      emit("validation-error", validationError.value);
       return false;
     }
     if (schema.minimum !== undefined && numValue < schema.minimum) {
       validationError.value = `Minimum value is ${schema.minimum}`;
+      emit("validation-error", validationError.value);
       return false;
     }
     if (schema.maximum !== undefined && numValue > schema.maximum) {
       validationError.value = `Maximum value is ${schema.maximum}`;
+      emit("validation-error", validationError.value);
       return false;
     }
   }
 
+  // If we reach here, validation passed
+  emit("validation-success");
   return true;
 };
 
-// Value change handler
+// Value change handler - Only emit update when validation passes
 const onValueChange = (value) => {
+  // Update internal value for validation
   internalValue.value = value;
 
   // Validate the new value
   if (validateField()) {
     emit("update:model-value", value);
   }
+  // If validation fails, do not emit update:model-value
+  // This ensures the parent component doesn't update the form data
+  // The validation-error event is already emitted by validateField()
 };
 
-// Helper for object handling
+// Object value handler
 const updateObjectValue = (value) => {
   try {
     const parsed = JSON.parse(value);
+    internalValue.value = parsed;
+
     if (validateField()) {
       emit("update:model-value", parsed);
     }
+    // If validation fails, keep the invalid value for user to fix
+    // The validation-error event is already emitted by validateField()
   } catch (error) {
     validationError.value = "Invalid JSON object";
+    emit("validation-error", validationError.value);
+    // Keep the invalid string value so user can see and fix it
+    objectStringValue.value = value;
   }
 };
 
+// Array value handler
 const updateArrayValue = (value) => {
   try {
     const parsed = JSON.parse(value);
+    internalValue.value = parsed;
+
     if (validateField()) {
       emit("update:model-value", parsed);
     }
+    // If validation fails, keep the invalid value for user to fix
+    // The validation-error event is already emitted by validateField()
   } catch (error) {
     validationError.value = "Invalid JSON array";
+    emit("validation-error", validationError.value);
+    // Keep the invalid string value so user can see and fix it
+    arrayStringValue.value = value;
   }
 };
 
-// Helper functions for nested object handling
+// Nested object helpers
 const getNestedValue = (key) => {
   if (!props.modelValue || typeof props.modelValue !== "object") {
     return undefined;
@@ -587,37 +627,41 @@ const getNestedValue = (key) => {
 const updateNestedValue = (key, value) => {
   const currentValue = props.modelValue || {};
   const updatedValue = { ...currentValue, [key]: value };
-  emit("update:model-value", updatedValue);
+
+  internalValue.value = updatedValue;
+
+  if (validateField()) {
+    emit("update:model-value", updatedValue);
+  }
+  // If validation fails, keep the invalid value for user to fix
+  // The validation-error event is already emitted by validateField()
 };
 
-// Check if nested field is modified
 const isNestedFieldModified = (key) => {
-  // For nested fields, we need to check if this specific field is modified
-  // Since we don't have access to the parent's checkNestedModification function,
-  // we'll use a different approach
   if (props.parentKey && props.checkNestedModification) {
     return props.checkNestedModification(props.parentKey, key);
   }
-  // Fallback: check if the parent object itself is modified
   return props.isModified;
 };
 
-// Check if this field itself is modified (for display purposes)
-const isThisFieldModified = computed(() => {
-  return props.isModified;
-});
+// Handle nested validation errors
+const handleNestedValidationError = (key, error) => {
+  // Forward the validation error to the parent component
+  // This ensures that nested field validation errors are properly handled
+  emit("validation-error", error);
+};
+
+// Handle nested validation successes
+const handleNestedValidationSuccess = (key) => {
+  // Forward the validation success to the parent component
+  // This ensures that nested field validation successes are properly handled
+  emit("validation-success");
+};
 
 // Form submit handler
 const onSubmit = () => {
   validateField();
 };
-
-// Generate field name from schema
-const fieldName = computed(() => {
-  return resolvedSchema.value.title
-    ? resolvedSchema.value.title
-    : resolvedSchema.value.$id?.split("/").pop() || "Field";
-});
 </script>
 
 <style>
