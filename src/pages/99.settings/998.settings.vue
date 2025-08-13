@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import ConfigEditor from "@/components/ConfigEditor.vue";
+import ConfigEditor from "@/components/config/ConfigEditor.vue";
 </script>
 
 <script lang="ts">

@@ -133,7 +133,7 @@
 import { ref, onMounted, watch, computed, nextTick } from "vue";
 import { useQuasar } from "quasar";
 import { invoke } from "@tauri-apps/api/core";
-import ConfigField from "@/components/ConfigField.vue";
+import ConfigField from "./ConfigField.vue";
 import TOML from "smol-toml";
 
 // State
