@@ -1,4 +1,5 @@
 mod config;
+mod storage;
 pub use config::get_config;
 
 #[allow(unused_imports)]
@@ -27,22 +28,45 @@ pub fn run() {
 
 #[allow(unused_variables)]
 async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
-  init_log();
+  let mut exit_code = 0;
+  if let Err(e) = init_log() {
+    eprintln!("Failed to initialize log: {}", e);
+    log::error!("Failed to initialize log: {}", e);
+    exit_code = 1;
+  }
+  let app_data_dir = match app.app_handle().path().app_data_dir() {
+    Ok(dir) => dir,
+    Err(e) => {
+      log::error!("Failed to get app data dir: {}", e);
+      exit_code = 2;
+      app.exit(exit_code);
+      return;
+    }
+  };
+
   #[cfg(debug_assertions)]
   {
-    // app.get_webview_window("main").unwrap().open_devtools();
-    log::debug!(
-      "app_data_dir={}",
-      app.app_handle().path().app_data_dir().unwrap().display()
-    );
+    log::debug!("app_data_dir={}", app_data_dir.display());
   }
-  if let Err(e) = config::setup(app.app_handle().path().app_data_dir().unwrap()).await {
+
+  if let Err(e) = config::setup(app_data_dir.clone()).await {
     log::error!("Failed to setup config: {}", e);
+    exit_code = 3;
+  }
+  if let Err(e) = storage::init(app_data_dir).await {
+    log::error!("Failed to initialize storage: {}", e);
+    exit_code = 4;
+  }
+  if exit_code != 0 {
+    log::error!("Setup failed with exit code {}", exit_code);
+    app.exit(exit_code);
+  } else {
+    log::info!("Setup complete");
   }
 }
 
-fn init_log() {
-  env_logger::try_init().expect("error initializing log");
+fn init_log() -> Result<(), log::SetLoggerError> {
+  env_logger::try_init()
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
