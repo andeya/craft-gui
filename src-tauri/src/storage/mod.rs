@@ -12,7 +12,6 @@ pub async fn init(app_data_dir: PathBuf) -> anyhow::Result<()> {
   Ok(())
 }
 
-#[allow(unused_imports)]
 pub use sled::db as sled_db;
 
 #[cfg(feature = "sqlite")]

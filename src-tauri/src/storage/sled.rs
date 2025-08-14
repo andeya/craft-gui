@@ -13,7 +13,6 @@ pub fn init(app_dir: PathBuf) -> anyhow::Result<()> {
   Ok(())
 }
 
-#[allow(dead_code)]
 pub fn db() -> &'static Db {
   DB.get().expect("Sled database not initialized")
 }

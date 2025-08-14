@@ -1,6 +1,9 @@
+mod appdata;
 mod config;
 mod storage;
+pub use appdata::{register, AppData};
 pub use config::get_config;
+pub use storage::sled_db;
 
 #[allow(unused_imports)]
 use tauri::Manager;
@@ -20,6 +23,11 @@ pub fn run() {
       config::cfg_cmd_get_schema,
       config::cfg_cmd_get_data,
       config::cfg_cmd_save_data,
+      appdata::appdata_cmd_get_schema,
+      appdata::appdata_cmd_get_data,
+      appdata::appdata_cmd_save_data,
+      appdata::appdata_cmd_remove_data,
+      appdata::appdata_cmd_exists_data,
       greet,
     ])
     .run(tauri::generate_context!())
