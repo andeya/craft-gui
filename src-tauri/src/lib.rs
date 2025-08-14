@@ -1,7 +1,8 @@
 mod appdata;
 mod config;
 mod storage;
-pub use appdata::{register, AppData};
+mod test;
+pub use appdata::AppData;
 pub use config::get_config;
 pub use storage::sled_db;
 
@@ -65,6 +66,10 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     log::error!("Failed to initialize storage: {}", e);
     exit_code = 4;
   }
+  if let Err(e) = register_all_appdata().await {
+    log::error!("Failed to register all appdata: {}", e);
+    exit_code = 5;
+  }
   if exit_code != 0 {
     log::error!("Setup failed with exit code {}", exit_code);
     app.exit(exit_code);
@@ -81,4 +86,11 @@ fn init_log() -> Result<(), log::SetLoggerError> {
 #[tauri::command]
 fn greet(name: &str) -> String {
   format!("Hello {}! You've been greeted from Rust!", name)
+}
+
+async fn register_all_appdata() -> anyhow::Result<()> {
+  test::ProductConfig::register().await?;
+  test::SystemSettings::register().await?;
+  test::UserProfile::register().await?;
+  Ok(())
 }
