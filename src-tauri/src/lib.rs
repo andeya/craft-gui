@@ -24,6 +24,8 @@ pub fn run() {
       config::cfg_cmd_get_schema,
       config::cfg_cmd_get_data,
       config::cfg_cmd_save_data,
+      appdata::appdata_cmd_schema_names,
+      appdata::appdata_cmd_schemas,
       appdata::appdata_cmd_get_schema,
       appdata::appdata_cmd_get_data,
       appdata::appdata_cmd_save_data,
@@ -37,18 +39,17 @@ pub fn run() {
 
 #[allow(unused_variables)]
 async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
-  let mut exit_code = 0;
   if let Err(e) = init_log() {
     eprintln!("Failed to initialize log: {}", e);
     log::error!("Failed to initialize log: {}", e);
-    exit_code = 1;
+    app.exit(1);
+    return;
   }
   let app_data_dir = match app.app_handle().path().app_data_dir() {
     Ok(dir) => dir,
     Err(e) => {
       log::error!("Failed to get app data dir: {}", e);
-      exit_code = 2;
-      app.exit(exit_code);
+      app.exit(2);
       return;
     }
   };
@@ -60,22 +61,20 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 
   if let Err(e) = config::setup(app_data_dir.clone()).await {
     log::error!("Failed to setup config: {}", e);
-    exit_code = 3;
+    app.exit(3);
+    return;
   }
   if let Err(e) = storage::init(app_data_dir).await {
     log::error!("Failed to initialize storage: {}", e);
-    exit_code = 4;
+    app.exit(4);
+    return;
   }
   if let Err(e) = register_all_appdata().await {
     log::error!("Failed to register all appdata: {}", e);
-    exit_code = 5;
+    app.exit(5);
+    return;
   }
-  if exit_code != 0 {
-    log::error!("Setup failed with exit code {}", exit_code);
-    app.exit(exit_code);
-  } else {
-    log::info!("Setup complete");
-  }
+  log::info!("Setup complete");
 }
 
 fn init_log() -> Result<(), log::SetLoggerError> {

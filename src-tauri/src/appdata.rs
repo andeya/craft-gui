@@ -113,6 +113,27 @@ async fn get_ok(schema_name: &str) -> Result<Arc<dyn AppDataDyn + Send + Sync>, 
 }
 
 #[tauri::command]
+pub async fn appdata_cmd_schema_names() -> Result<Vec<String>, String> {
+  let mut keys = REGISTERED_APPDATA
+    .read()
+    .await
+    .keys()
+    .cloned()
+    .collect::<Vec<String>>();
+  keys.sort();
+  Ok(keys)
+}
+
+#[tauri::command]
+pub async fn appdata_cmd_schemas() -> Result<Vec<schemars::Schema>, String> {
+  let mut schemas = Vec::new();
+  for key in appdata_cmd_schema_names().await? {
+    schemas.push(get_ok(&key).await?.get_schema());
+  }
+  Ok(schemas)
+}
+
+#[tauri::command]
 pub async fn appdata_cmd_get_schema(schema_name: &str) -> Result<schemars::Schema, String> {
   get_ok(schema_name)
     .await

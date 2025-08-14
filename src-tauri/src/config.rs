@@ -114,7 +114,9 @@ pub async fn setup(dir: PathBuf) -> anyhow::Result<()> {
   let _ = CONFIG_PATH
     .set(dir.clone().join("config.toml"))
     .map_err(|e| anyhow::anyhow!("Failed to set config file path: {}", e.to_string_lossy()));
-  let config_path = CONFIG_PATH.get().unwrap();
+  let config_path = CONFIG_PATH
+    .get()
+    .ok_or(anyhow::anyhow!("Config path not set"))?;
 
   let config: Arc<AppConfig> = if !config_path.exists() {
     std::fs::create_dir_all(dir)
@@ -141,7 +143,7 @@ async fn set_config(config: Arc<AppConfig>) {
 }
 
 async fn load_config() -> Result<Arc<AppConfig>, String> {
-  let config_path = CONFIG_PATH.get().unwrap();
+  let config_path = CONFIG_PATH.get().ok_or("Config path not set")?;
   let config =
     std::fs::read(config_path).map_err(|e| format!("Failed to read config file: {}", e))?;
   let config: AppConfig =
@@ -150,7 +152,7 @@ async fn load_config() -> Result<Arc<AppConfig>, String> {
 }
 
 async fn save_config(config: &AppConfig) -> Result<(), String> {
-  let config_path = CONFIG_PATH.get().unwrap();
+  let config_path = CONFIG_PATH.get().ok_or("Config path not set")?;
   let config_str =
     toml::to_string_pretty(config).map_err(|e| format!("Failed to serialize config: {}", e))?;
   std::fs::write(config_path, config_str)
