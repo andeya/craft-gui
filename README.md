@@ -1,6 +1,32 @@
 # CraftGUI
 
-A cross-platform application templete built with Vue 3 + Quasar + Tauri.
+A cross-platform application template built with Vue 3 + Quasar + Tauri, featuring innovative automated routing and comprehensive data management systems.
+
+## 📖 Overview
+
+CraftGUI is a modern, feature-rich cross-platform application template that combines the power of Vue 3, Quasar Framework, and Tauri to create desktop and mobile applications. The project stands out with its innovative **Automated Router System** and comprehensive **Application Data Management System**, providing developers with a robust foundation for building complex applications.
+
+### 🎯 Key Highlights
+
+- **🚀 Automated Router System**: Filename-based routing metadata with automatic menu generation
+- **📊 Application Data Management**: Schema-based form generation with CRUD operations
+- **🔧 Type-Safe Development**: Full TypeScript support throughout the stack
+- **📱 Cross-Platform**: Desktop, Android, and iOS support via Tauri
+- **🎨 Modern UI**: Quasar Framework with Tailwind CSS for beautiful interfaces
+- **⚡ High Performance**: Sled database backend for efficient data storage
+- **🛡️ Security First**: Local data storage with no network transmission
+
+### 🏗️ Architecture Excellence
+
+CraftGUI implements clean architecture principles with clear separation of concerns:
+
+- **Frontend**: Vue 3 + TypeScript + Quasar Framework
+- **Backend**: Rust + Tauri for cross-platform capabilities
+- **Data Layer**: Sled embedded database with JSON Schema validation
+- **Routing**: Automated file-based routing with metadata inference
+- **Forms**: Dynamic schema-driven form generation
+
+This template is ideal for developers building data-intensive applications, configuration management tools, or any application requiring robust form handling and data persistence.
 
 <div align="center">
   <img src="docs/image01.png" alt="Tauri window screenshot 1" style="max-width:1000px; width:100%;" />

@@ -17,20 +17,206 @@
 
       <!-- AppData Form -->
       <div class="col-12">
-        <SchemaDataForm
-          title="Dynamic Data Form"
-          description="Select a schema and data key to start editing"
-          :available-schemas="availableSchemas"
-          :auto-load="false"
-          @save="handleSave"
-          @load="handleLoad"
-          @delete="handleDelete"
-          @reset="handleReset"
-          @create="handleCreate"
-          @prepare="handlePrepare"
-          @schema-change="handleSchemaChange"
-          @key-change="handleKeyChange"
-        />
+        <QCard>
+          <QCardSection>
+            <h2 class="text-xl font-semibold q-mb-md">SchemaDataForm Demo</h2>
+            <p class="text-gray-600 q-mb-md">
+              This demonstrates the SchemaDataForm component for data
+              management. Select a schema and data key to start editing.
+            </p>
+
+            <!-- Data Form Configuration -->
+            <div class="row q-col-gutter-md q-mb-md">
+              <div class="col-12 col-md-6">
+                <QSelect
+                  v-model="dataFormColumns"
+                  :options="[
+                    { label: 'Auto', value: 0 },
+                    { label: 'Single Column', value: 1 },
+                    { label: 'Double Column', value: 2 },
+                    { label: 'Triple Column', value: 3 },
+                  ]"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  label="Field Columns Layout"
+                  outlined
+                  dense
+                  @update:model-value="handleDataFormColumnsChange"
+                />
+              </div>
+            </div>
+
+            <SchemaDataForm
+              title="Dynamic Data Form"
+              description="Select a schema and data key to start editing"
+              :available-schemas="availableSchemas"
+              :auto-load="false"
+              :columns="dataFormColumns"
+              @save="handleSave"
+              @load="handleLoad"
+              @delete="handleDelete"
+              @reset="handleReset"
+              @create="handleCreate"
+              @prepare="handlePrepare"
+              @schema-change="handleSchemaChange"
+              @key-change="handleKeyChange"
+            />
+          </QCardSection>
+        </QCard>
+      </div>
+
+      <!-- SchemaApiForm Demo -->
+      <div class="col-12">
+        <QCard>
+          <QCardSection>
+            <h2 class="text-xl font-semibold q-mb-md">SchemaApiForm Demo</h2>
+            <p class="text-gray-600 q-mb-md">
+              This demonstrates the SchemaApiForm component for API interface
+              calls. Select a schema to see the form with default values and
+              validation.
+            </p>
+
+            <!-- Schema Selection and Layout Control -->
+            <div class="row q-col-gutter-md q-mb-md">
+              <div class="col-12 col-md-4">
+                <QSelect
+                  v-model="selectedApiSchema"
+                  :options="availableSchemas"
+                  option-label="title"
+                  option-value="name"
+                  emit-value
+                  map-options
+                  label="Select Schema for API Form"
+                  outlined
+                  dense
+                  @update:model-value="handleApiSchemaChange"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <QSelect
+                  v-model="apiColumns"
+                  :options="[
+                    { label: 'Auto', value: 0 },
+                    { label: 'Single Column', value: 1 },
+                    { label: 'Double Column', value: 2 },
+                    { label: 'Triple Column', value: 3 },
+                  ]"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  label="API Form Columns Layout"
+                  outlined
+                  dense
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <QBtn
+                  v-if="selectedApiSchema"
+                  label="Reset Form"
+                  icon="refresh"
+                  color="secondary"
+                  @click="resetApiForm"
+                />
+              </div>
+            </div>
+
+            <!-- SchemaApiForm Component -->
+            <div v-if="selectedApiSchema">
+              <SchemaApiForm
+                :schema-name="selectedApiSchema"
+                :initial-data="apiFormInitialData"
+                :submit-button-text="apiSubmitButtonText"
+                :submit-button-icon="apiSubmitButtonIcon"
+                :cancel-button-text="apiCancelButtonText"
+                :cancel-button-icon="apiCancelButtonIcon"
+                :compact="apiCompactMode"
+                :columns="apiColumns"
+                @submit="handleApiSubmit"
+                @cancel="handleApiCancel"
+                @validation-error="handleApiValidationError"
+                @validation-success="handleApiValidationSuccess"
+                @schema-loaded="handleApiSchemaLoaded"
+                @schema-error="handleApiSchemaError"
+              />
+            </div>
+
+            <!-- API Form Configuration -->
+            <div v-if="selectedApiSchema" class="q-mt-md">
+              <QExpansionItem
+                icon="settings"
+                label="API Form Configuration"
+                header-class="text-primary"
+              >
+                <QCard>
+                  <QCardSection>
+                    <div class="row q-col-gutter-md">
+                      <div class="col-12 col-md-6">
+                        <QInput
+                          v-model="apiSubmitButtonText"
+                          label="Submit Button Text"
+                          outlined
+                          dense
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QInput
+                          v-model="apiSubmitButtonIcon"
+                          label="Submit Button Icon"
+                          outlined
+                          dense
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QInput
+                          v-model="apiCancelButtonText"
+                          label="Cancel Button Text"
+                          outlined
+                          dense
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QInput
+                          v-model="apiCancelButtonIcon"
+                          label="Cancel Button Icon"
+                          outlined
+                          dense
+                        />
+                      </div>
+
+                      <div class="col-12 col-md-6">
+                        <QToggle
+                          v-model="apiCompactMode"
+                          label="Compact Mode"
+                          color="primary"
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QSelect
+                          v-model="apiColumns"
+                          :options="[
+                            { label: 'Auto', value: 0 },
+                            { label: 'Single Column', value: 1 },
+                            { label: 'Double Column', value: 2 },
+                          ]"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          label="Field Columns"
+                          outlined
+                          dense
+                        />
+                      </div>
+                    </div>
+                  </QCardSection>
+                </QCard>
+              </QExpansionItem>
+            </div>
+          </QCardSection>
+        </QCard>
       </div>
 
       <!-- Instructions -->
@@ -124,6 +310,7 @@
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
+import SchemaApiForm from "@/components/schemaform/SchemaApiForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
 
 const $q = useQuasar();
@@ -138,6 +325,18 @@ const eventLog = ref<EventLogItem[]>([]);
 
 // Available schemas that match the backend registrations
 const availableSchemas = [...DEFAULT_AVAILABLE_SCHEMAS];
+
+// SchemaApiForm demo state
+const selectedApiSchema = ref<string>("");
+const apiFormInitialData = ref<Record<string, any>>({});
+const apiSubmitButtonText = ref("Submit");
+const apiSubmitButtonIcon = ref("send");
+const apiCancelButtonText = ref("Cancel");
+const apiCancelButtonIcon = ref("close");
+
+const apiCompactMode = ref(false);
+const apiColumns = ref(0); // 0=auto, 1=single column, 2=double column
+const dataFormColumns = ref(0); // 0=auto, 1=single column, 2=double column
 
 // Event handlers
 const handleSave = (data: any) => {
@@ -186,6 +385,51 @@ const handleSchemaChange = (schemaName: string) => {
 
 const handleKeyChange = (key: number) => {
   addEventLog(`🔑 Data key changed to: ${key}`);
+};
+
+const handleDataFormColumnsChange = (value: number) => {
+  addEventLog(`📐 Data form columns changed to: ${value}`);
+};
+
+// SchemaApiForm event handlers
+const handleApiSchemaChange = (schemaName: string) => {
+  addEventLog(`📋 API Form schema changed to: ${schemaName}`);
+};
+
+const resetApiForm = () => {
+  apiFormInitialData.value = {};
+  addEventLog(`🔄 API Form reset`);
+};
+
+const handleApiSubmit = (data: Record<string, any>) => {
+  addEventLog(`🚀 API Form submitted: ${JSON.stringify(data, null, 2)}`);
+  // Simulate API call delay
+  setTimeout(() => {
+    addEventLog(`✅ API call completed successfully`);
+  }, 1000);
+};
+
+const handleApiCancel = () => {
+  addEventLog(`❌ API Form cancelled`);
+};
+
+const handleApiValidationError = (errors: Map<string, string>) => {
+  const errorList = Array.from(errors.entries())
+    .map(([field, error]) => `${field}: ${error}`)
+    .join(", ");
+  addEventLog(`⚠️ API Form validation errors: ${errorList}`);
+};
+
+const handleApiValidationSuccess = () => {
+  addEventLog(`✅ API Form validation passed`);
+};
+
+const handleApiSchemaLoaded = (schema: any) => {
+  addEventLog(`📋 API Form schema loaded: ${schema.title || "Untitled"}`);
+};
+
+const handleApiSchemaError = (error: string) => {
+  addEventLog(`❌ API Form schema error: ${error}`);
 };
 
 // Helper function to add events to log

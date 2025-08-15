@@ -153,26 +153,21 @@
                 }}
               </p>
             </div>
-            <div class="row q-col-gutter-sm">
-              <div
-                v-for="key in Object.keys(formData)"
+            <div class="fields-container" :class="`columns-${columns}`">
+              <SchemaField
+                v-for="key in Object.keys(schema?.properties || {})"
                 :key="key"
-                class="col-12 col-md-6"
-              >
-                <SchemaField
-                  v-if="schema.properties?.[key]"
-                  :schema="schema.properties[key]"
-                  :root-schema="schema"
-                  :model-value="formData[key]"
-                  :is-modified="isFieldModified(key)"
-                  :parent-key="key"
-                  :check-nested-modification="isNestedFieldModified"
-                  :compact="compactMode"
-                  @update:model-value="updateFormData(key, $event)"
-                  @validation-error="handleValidationError(key, $event)"
-                  @validation-success="handleValidationSuccess(key)"
-                />
-              </div>
+                :schema="schema!.properties![key]"
+                :root-schema="schema"
+                :model-value="formData[key]"
+                :is-modified="isFieldModified(key)"
+                :parent-key="key"
+                :check-nested-modification="isNestedFieldModified"
+                :compact="compactMode"
+                @update:model-value="updateFormData(key, $event)"
+                @validation-error="handleValidationError(key, $event)"
+                @validation-success="handleValidationSuccess(key)"
+              />
             </div>
           </QCardSection>
         </QCard>
@@ -261,6 +256,7 @@ interface Props {
   // Display control
   showHeader?: boolean;
   compact?: boolean;
+  columns?: number; // 0=auto, 1=single column, 2=double column
 
   // Button control
   showSaveButton?: boolean;
@@ -282,6 +278,7 @@ const props = withDefaults(defineProps<Props>(), {
   description: "",
   showHeader: true,
   compact: true,
+  columns: 0, // 0=auto, 1=single column, 2=double column
   showSaveButton: true,
   showDeleteButton: true,
   showNewButton: true,
@@ -1048,6 +1045,38 @@ defineExpose({
 .empty-state-content {
   max-width: 400px;
   margin: 0 auto;
+}
+
+/* Fields container layout */
+.fields-container {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.fields-container.columns-0 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.fields-container.columns-1 {
+  grid-template-columns: 1fr;
+}
+
+.fields-container.columns-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.fields-container.columns-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .fields-container.columns-0,
+  .fields-container.columns-2,
+  .fields-container.columns-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Mobile responsiveness */
