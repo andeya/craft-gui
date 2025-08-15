@@ -113,7 +113,7 @@ pub async fn register<T: AppData>() -> anyhow::Result<()> {
       std::any::type_name::<T>(),
     ));
   }
-  log::info!(
+  println!(
     "AppData registered: schema_name={}, type={}",
     key,
     std::any::type_name::<T>()

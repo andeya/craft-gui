@@ -100,6 +100,6 @@ mod tests {
   #[tokio::test]
   async fn test_register_all_appdata() {
     let result = register_all_appdata().await;
-    assert_ok!(result);
+    assert!(result.is_ok());
   }
 }
