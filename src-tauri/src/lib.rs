@@ -97,9 +97,9 @@ async fn register_all_appdata() -> anyhow::Result<()> {
 mod tests {
   use super::*;
 
-  #[test]
-  fn test_register_all_appdata() {
-    let result = register_all_appdata().unwrap();
-    assert!(result.is_ok());
+  #[tokio::test]
+  async fn test_register_all_appdata() {
+    let result = register_all_appdata().await;
+    assert_ok!(result);
   }
 }
