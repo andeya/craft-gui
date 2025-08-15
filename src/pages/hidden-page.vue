@@ -1,5 +1,5 @@
 <template>
-  <q-page
+  <QPage
     class="flex column items-center justify-center"
     style="min-height: 100vh"
   >
@@ -9,11 +9,11 @@
         This page will not appear in the menu because the filename has no
         numeric prefix (showInMenu: false, order: 0)
       </p>
-      <q-btn color="primary" size="lg" @click="$router.push('/')">
+      <QBtn color="primary" size="lg" @click="$router.push('/')">
         Back to Home
-      </q-btn>
+      </QBtn>
     </div>
-  </q-page>
+  </QPage>
 </template>
 
 <script setup lang="ts">

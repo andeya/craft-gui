@@ -44,7 +44,7 @@ export default defineConfig({
       sassVariables: fileURLToPath(
         new URL("./src/quasar-variables.sass", import.meta.url)
       ),
-      autoImportComponentCase: "kebab",
+      autoImportComponentCase: "pascal",
     }),
   ],
   resolve: {

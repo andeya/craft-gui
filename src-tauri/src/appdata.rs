@@ -39,6 +39,15 @@ pub trait AppData: Default + Sync + Send + JsonSchema + Entity<Key = u32> + 'sta
   fn exists_data(key: &u32) -> Result<bool, String> {
     Self::exists(key, sled_db()).map_err(|e| e.to_string())
   }
+  fn find_next_available_key(start_key: u32) -> Result<u32, String> {
+    let mut key = start_key;
+    loop {
+      if !Self::exists(&key, sled_db()).map_err(|e| e.to_string())? {
+        return Ok(key);
+      }
+      key = key.checked_add(1).ok_or("Key overflow")?;
+    }
+  }
 }
 
 impl<T: Default + Sync + Send + JsonSchema + Entity<Key = u32> + 'static> AppData for T {}
@@ -50,6 +59,7 @@ pub trait AppDataDyn {
   fn save_data(&self, data: &[u8]) -> Result<(), String>;
   fn remove_data(&self, key: u32) -> Result<(), String>;
   fn exists_data(&self, key: u32) -> Result<bool, String>;
+  fn find_next_available_key(&self, start_key: u32) -> Result<u32, String>;
 }
 
 impl<T: AppData> AppDataDyn for T {
@@ -78,6 +88,10 @@ impl<T: AppData> AppDataDyn for T {
 
   fn exists_data(&self, key: u32) -> Result<bool, String> {
     <T as AppData>::exists_data(&key)
+  }
+
+  fn find_next_available_key(&self, start_key: u32) -> Result<u32, String> {
+    <T as AppData>::find_next_available_key(start_key)
   }
 }
 
@@ -166,4 +180,14 @@ pub async fn appdata_cmd_exists_data(schema_name: &str, key: u32) -> Result<bool
   get_ok(schema_name)
     .await
     .and_then(|appdata| appdata.exists_data(key))
+}
+
+#[tauri::command]
+pub async fn appdata_cmd_find_next_available_key(
+  schema_name: &str,
+  start_key: u32,
+) -> Result<u32, String> {
+  get_ok(schema_name)
+    .await
+    .and_then(|appdata| appdata.find_next_available_key(start_key))
 }

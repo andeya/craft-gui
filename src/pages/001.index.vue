@@ -1,5 +1,5 @@
 <template>
-  <q-page
+  <QPage
     class="flex column items-center justify-center"
     style="min-height: 100vh"
   >
@@ -8,15 +8,15 @@
       <p class="text-body1 q-mb-lg">
         A desktop application built with Vue 3 + Quasar + Tauri
       </p>
-      <q-btn
+      <QBtn
         color="primary"
         size="lg"
         @click="$router.push('/settings/route-map')"
       >
         Route Map
-      </q-btn>
+      </QBtn>
     </div>
-  </q-page>
+  </QPage>
 </template>
 
 <script setup lang="ts">

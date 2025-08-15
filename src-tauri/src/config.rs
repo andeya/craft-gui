@@ -1,9 +1,8 @@
+use crate::appdata::AppData;
+use reindeer::Entity;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{
-  path::PathBuf,
-  sync::{Arc, OnceLock},
-};
+use std::sync::{Arc, OnceLock};
 use tokio::sync::RwLock;
 
 /// Application configuration root structure
@@ -86,76 +85,54 @@ impl Default for AppConfig {
   }
 }
 
-/// Tauri command to get the JSON schema for configuration validation
-#[tauri::command]
-pub fn cfg_cmd_get_schema() -> schemars::Schema {
-  schemars::schema_for!(AppConfig)
-}
+impl Entity for AppConfig {
+  type Key = u32;
 
-/// Tauri command to get the current configuration values
-#[tauri::command]
-pub async fn cfg_cmd_get_data() -> Result<Arc<AppConfig>, String> {
-  let config = load_config().await?;
-  set_config(config.clone()).await;
-  Ok(config)
-}
+  fn store_name() -> &'static str {
+    "app_config"
+  }
 
-/// Tauri command to save configuration with validation
-#[tauri::command()]
-pub async fn cfg_cmd_save_data(config: Arc<AppConfig>) -> Result<(), String> {
-  save_config(&config).await?;
-  set_config(config).await;
-  Ok(())
-}
+  fn get_key(&self) -> &Self::Key {
+    &0
+  }
 
-static CONFIG_PATH: OnceLock<PathBuf> = OnceLock::new();
-
-pub async fn setup(dir: PathBuf) -> anyhow::Result<()> {
-  let _ = CONFIG_PATH
-    .set(dir.clone().join("config.toml"))
-    .map_err(|e| anyhow::anyhow!("Failed to set config file path: {}", e.to_string_lossy()));
-  let config_path = CONFIG_PATH
-    .get()
-    .ok_or(anyhow::anyhow!("Config path not set"))?;
-
-  let config: Arc<AppConfig> = if !config_path.exists() {
-    std::fs::create_dir_all(dir)
-      .map_err(|e| anyhow::anyhow!("Failed to create config directory: {}", e))?;
-    let config = Arc::new(AppConfig::default());
-    save_config(&config).await.map_err(|e| anyhow::anyhow!(e))?;
-    config
-  } else {
-    load_config().await.map_err(|e| anyhow::anyhow!(e))?
-  };
-  CONFIG
-    .set(RwLock::new(config))
-    .map_err(|_| anyhow::anyhow!("Failed to set config"))
+  fn set_key(&mut self, _key: &Self::Key) {}
 }
 
 static CONFIG: OnceLock<RwLock<Arc<AppConfig>>> = OnceLock::new();
+
+pub async fn init_config() -> Result<(), String> {
+  let config = AppConfig::get_data(&0)?;
+  let config = if let Some(config) = config {
+    config
+  } else {
+    let config = AppConfig::default();
+    config
+      .save_data()
+      .map_err(|e| format!("Failed to create config: {:?}", e))?;
+    config
+  };
+  CONFIG
+    .set(RwLock::new(Arc::new(config)))
+    .map_err(|e| format!("Already initialized: {:?}", e))
+}
 
 pub async fn get_config() -> Arc<AppConfig> {
   CONFIG.get().unwrap().read().await.clone()
 }
 
+pub async fn load_config() -> Result<Arc<AppConfig>, String> {
+  let config = Arc::new(AppConfig::get_data(&0)?.ok_or("Config not found")?);
+  set_config(config.clone()).await;
+  Ok(config)
+}
+
+pub async fn save_config(config: AppConfig) -> Result<(), String> {
+  config.save_data()?;
+  set_config(Arc::new(config)).await;
+  Ok(())
+}
+
 async fn set_config(config: Arc<AppConfig>) {
   *CONFIG.get().unwrap().write().await = config;
-}
-
-async fn load_config() -> Result<Arc<AppConfig>, String> {
-  let config_path = CONFIG_PATH.get().ok_or("Config path not set")?;
-  let config =
-    std::fs::read(config_path).map_err(|e| format!("Failed to read config file: {}", e))?;
-  let config: AppConfig =
-    toml::from_slice(&config).map_err(|e| format!("Failed to parse config file: {}", e))?;
-  Ok(Arc::new(config))
-}
-
-async fn save_config(config: &AppConfig) -> Result<(), String> {
-  let config_path = CONFIG_PATH.get().ok_or("Config path not set")?;
-  let config_str =
-    toml::to_string_pretty(config).map_err(|e| format!("Failed to serialize config: {}", e))?;
-  std::fs::write(config_path, config_str)
-    .map_err(|e| format!("Failed to write config file: {}", e))?;
-  Ok(())
 }

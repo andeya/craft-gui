@@ -1,71 +1,71 @@
 <template>
-  <q-page class="q-pa-md">
+  <QPage class="q-pa-md">
     <!-- Route Testing -->
-    <q-card class="q-mb-md">
-      <q-card-section>
+    <QCard class="q-mb-md">
+      <QCardSection>
         <div class="text-h6">Route Testing</div>
         <div class="row q-gutter-sm q-mb-md">
-          <q-input
+          <QInput
             v-model="testPath"
             label="Test Path"
             dense
             outlined
             class="col-12 col-md-4"
           />
-          <q-btn color="primary" @click="testRoute" label="Test Route" />
+          <QBtn color="primary" @click="testRoute" label="Test Route" />
         </div>
         <div v-if="testResult" class="text-body2">
           <pre>{{ JSON.stringify(testResult, null, 2) }}</pre>
         </div>
-      </q-card-section>
-    </q-card>
+      </QCardSection>
+    </QCard>
     <!-- Route Statistics -->
-    <q-card class="q-mb-md">
-      <q-card-section>
+    <QCard class="q-mb-md">
+      <QCardSection>
         <div class="text-h6">Route Statistics</div>
-        <q-list>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Total Routes</q-item-label>
-              <q-item-label caption>{{ routes.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Menu Routes</q-item-label>
-              <q-item-label caption>{{ menuRoutes.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Depth 1 Routes</q-item-label>
-              <q-item-label caption>{{ depth1Routes.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item>
-            <q-item-section>
-              <q-item-label>Route Groups</q-item-label>
-              <q-item-label caption>{{ routeGroupInfos.length }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card-section>
-    </q-card>
+        <QList>
+          <QItem>
+            <QItemSection>
+              <QItemLabel>Total Routes</QItemLabel>
+              <QItemLabel caption>{{ routes.length }}</QItemLabel>
+            </QItemSection>
+          </QItem>
+          <QItem>
+            <QItemSection>
+              <QItemLabel>Menu Routes</QItemLabel>
+              <QItemLabel caption>{{ menuRoutes.length }}</QItemLabel>
+            </QItemSection>
+          </QItem>
+          <QItem>
+            <QItemSection>
+              <QItemLabel>Depth 1 Routes</QItemLabel>
+              <QItemLabel caption>{{ depth1Routes.length }}</QItemLabel>
+            </QItemSection>
+          </QItem>
+          <QItem>
+            <QItemSection>
+              <QItemLabel>Route Groups</QItemLabel>
+              <QItemLabel caption>{{ routeGroupInfos.length }}</QItemLabel>
+            </QItemSection>
+          </QItem>
+        </QList>
+      </QCardSection>
+    </QCard>
 
     <!-- Route Groups Tables -->
     <div v-for="group in routeGroupInfos" :key="group.title" class="q-mt-md">
-      <q-card>
-        <q-card-section>
+      <QCard>
+        <QCardSection>
           <div class="text-h6">
             {{ group.title }} ({{ group.routes.length }} routes)
-            <q-chip
+            <QChip
               :label="`Order: ${group.order}`"
               color="primary"
               size="sm"
               class="q-ml-sm text-white"
             />
           </div>
-          <q-table
+          <QTable
             :rows="group.routes"
             :columns="routeInfoColumns"
             row-key="path"
@@ -83,35 +83,35 @@
             "
           >
             <template v-slot:body="props">
-              <q-tr :props="props" @click="$router.push(props.row.path)">
-                <q-td key="icon" :props="props">
-                  <q-icon :name="props.row.icon" />
-                </q-td>
-                <q-td key="title" :props="props">
+              <QTr :props="props" @click="$router.push(props.row.path)">
+                <QTd key="icon" :props="props">
+                  <QIcon :name="props.row.icon" />
+                </QTd>
+                <QTd key="title" :props="props">
                   {{ props.row.title }}
-                </q-td>
-                <q-td key="path" :props="props">
+                </QTd>
+                <QTd key="path" :props="props">
                   {{ props.row.path }}
-                </q-td>
-                <q-td key="order" :props="props">
+                </QTd>
+                <QTd key="order" :props="props">
                   {{ props.row.order || 0 }}
-                </q-td>
-                <q-td key="showInMenu" :props="props">
-                  <q-icon
+                </QTd>
+                <QTd key="showInMenu" :props="props">
+                  <QIcon
                     :name="props.row.showInMenu ? 'check_circle' : 'cancel'"
                     :color="props.row.showInMenu ? 'positive' : 'negative'"
                   />
-                </q-td>
-                <q-td key="description" :props="props">
+                </QTd>
+                <QTd key="description" :props="props">
                   {{ props.row.description || "" }}
-                </q-td>
-              </q-tr>
+                </QTd>
+              </QTr>
             </template>
-          </q-table>
-        </q-card-section>
-      </q-card>
+          </QTable>
+        </QCardSection>
+      </QCard>
     </div>
-  </q-page>
+  </QPage>
 </template>
 
 <script setup lang="ts">

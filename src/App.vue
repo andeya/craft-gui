@@ -33,10 +33,10 @@ function isActive(path: string) {
 </script>
 
 <template>
-  <q-layout view="lHh Lpr lFf" class="bg-white">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn
+  <QLayout view="lHh Lpr lFf" class="bg-white">
+    <QHeader elevated>
+      <QToolbar>
+        <QBtn
           flat
           dense
           round
@@ -45,68 +45,68 @@ function isActive(path: string) {
           icon="menu"
         />
 
-        <q-toolbar-title>
+        <QToolbarTitle>
           <span class="text-lg font-bold">{{ currentRoute.meta.title }}</span>
           <span class="text-sm text-secondary text-white ml-2">{{
             currentRoute?.meta?.description
           }}</span>
-        </q-toolbar-title>
-      </q-toolbar>
-    </q-header>
+        </QToolbarTitle>
+      </QToolbar>
+    </QHeader>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-2">
-      <q-list v-for="group in menuRouteGroupInfos" :key="group.title">
-        <q-item-label header> {{ group.title }} </q-item-label>
+    <QDrawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-2">
+      <QList v-for="group in menuRouteGroupInfos" :key="group.title">
+        <QItemLabel header> {{ group.title }} </QItemLabel>
 
-        <q-item
+        <QItem
           v-for="item in group.routes"
           :key="item.path"
           clickable
           :active="isActive(item.path)"
           @click="navigateTo(item.path)"
         >
-          <q-item-section avatar>
-            <q-icon :name="item.icon" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>{{ item.title }}</q-item-label>
-          </q-item-section>
-        </q-item>
+          <QItemSection avatar>
+            <QIcon :name="item.icon" />
+          </QItemSection>
+          <QItemSection>
+            <QItemLabel>{{ item.title }}</QItemLabel>
+          </QItemSection>
+        </QItem>
 
-        <q-separator class="q-my-md" />
-      </q-list>
+        <QSeparator class="q-my-md" />
+      </QList>
 
-      <q-item-label header>▶:::::::::◀</q-item-label>
-      <!-- <q-item-label header>⧸::::::::::⧹</q-item-label> -->
+      <QItemLabel header>▶:::::::::◀</QItemLabel>
+      <!-- <QItemLabel header>⧸::::::::::⧹</QItemLabel> -->
 
-      <q-item
+      <QItem
         clickable
         target="_blank"
         rel="noopener"
         href="https://quasar.dev"
       >
-        <q-item-section avatar>
-          <q-icon name="school" />
-        </q-item-section>
-        <q-item-section>
-          <q-item-label>Quasar Documentation</q-item-label>
-          <q-item-label caption>quasar.dev</q-item-label>
-        </q-item-section>
-      </q-item>
+        <QItemSection avatar>
+          <QIcon name="school" />
+        </QItemSection>
+        <QItemSection>
+          <QItemLabel>Quasar Documentation</QItemLabel>
+          <QItemLabel caption>quasar.dev</QItemLabel>
+        </QItemSection>
+      </QItem>
 
-      <q-item clickable target="_blank" rel="noopener" href="https://tauri.app">
-        <q-item-section avatar>
-          <q-icon name="desktop_windows" />
-        </q-item-section>
-        <q-item-section>
-          <q-item-label>Tauri Official</q-item-label>
-          <q-item-label caption>tauri.app</q-item-label>
-        </q-item-section>
-      </q-item>
-    </q-drawer>
+      <QItem clickable target="_blank" rel="noopener" href="https://tauri.app">
+        <QItemSection avatar>
+          <QIcon name="desktop_windows" />
+        </QItemSection>
+        <QItemSection>
+          <QItemLabel>Tauri Official</QItemLabel>
+          <QItemLabel caption>tauri.app</QItemLabel>
+        </QItemSection>
+      </QItem>
+    </QDrawer>
 
-    <q-page-container>
+    <QPageContainer>
       <router-view />
-    </q-page-container>
-  </q-layout>
+    </QPageContainer>
+  </QLayout>
 </template>

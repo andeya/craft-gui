@@ -1,7 +1,7 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card class="q-dialog-plugin">
-      <q-card-section>
+  <QDialog ref="dialogRef" @hide="onDialogHide">
+    <QCard class="q-dialog-plugin">
+      <QCardSection>
         <div class="text-diff-dialog">
           <div class="diff-header">
             <div class="diff-title">
@@ -44,22 +44,22 @@
             </div>
           </div>
         </div>
-      </q-card-section>
+      </QCardSection>
 
-      <q-card-actions align="right">
-        <q-btn
+      <QCardActions align="right">
+        <QBtn
           :color="confirmButtonColor"
           :label="confirmButtonLabel"
           @click="onOKClick"
         />
-        <q-btn
+        <QBtn
           :color="cancelButtonColor"
           :label="cancelButtonLabel"
           @click="onDialogCancel"
         />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      </QCardActions>
+    </QCard>
+  </QDialog>
 </template>
 
 <script setup lang="ts">

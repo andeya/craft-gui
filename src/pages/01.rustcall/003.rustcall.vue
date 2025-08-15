@@ -1,5 +1,5 @@
 <template>
-  <q-page class="flex column items-center" style="min-height: 100vh">
+  <QPage class="flex column items-center" style="min-height: 100vh">
     <div
       class="w-full max-w-lg q-pa-md px-2"
       style="padding-top: 24vh; margin: 0 auto"
@@ -24,12 +24,12 @@
         Click on the Tauri, Vite, and Vue logos to learn more.
       </div>
       <div class="w-full">
-        <q-form
+        <QForm
           @submit.prevent="greet"
           class="flex gap-x-1 items-center"
           style="max-width: 80%; margin: 0 auto"
         >
-          <q-input
+          <QInput
             v-model="name"
             label="Enter a name..."
             dense
@@ -38,23 +38,26 @@
             class="flex-1"
             style="min-width: 120px; max-width: 100%"
           />
-          <q-btn type="submit" color="black" unelevated> GREET </q-btn>
-        </q-form>
+          <QBtn type="submit" color="black" unelevated> GREET </QBtn>
+        </QForm>
       </div>
       <div class="q-mt-md text-center">{{ greetMsg }}</div>
     </div>
-  </q-page>
+  </QPage>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { TAURI_COMMANDS } from "@/utils/tauri-commands";
 
 const greetMsg = ref("");
 const name = ref("");
 
 async function greet() {
-  greetMsg.value = await invoke("greet", { name: name.value });
+  greetMsg.value = await invoke(TAURI_COMMANDS.GENERAL.GREET, {
+    name: name.value,
+  });
 }
 </script>
 

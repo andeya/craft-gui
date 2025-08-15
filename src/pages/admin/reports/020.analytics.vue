@@ -1,46 +1,46 @@
 <template>
-  <q-page class="q-pa-md">
+  <QPage class="q-pa-md">
     <div class="text-center q-mb-lg">
       <h1 class="text-h3">Analytics Reports</h1>
       <p class="text-body1">View detailed analytics and performance metrics</p>
     </div>
 
     <div class="row q-gutter-md">
-      <q-card class="col-12 col-sm-6 col-md-3">
-        <q-card-section>
+      <QCard class="col-12 col-sm-6 col-md-3">
+        <QCardSection>
           <div class="text-h6">Page Views</div>
           <div class="text-h4 text-primary">12,345</div>
           <div class="text-caption">+15% from last month</div>
-        </q-card-section>
-      </q-card>
+        </QCardSection>
+      </QCard>
 
-      <q-card class="col-12 col-sm-6 col-md-3">
-        <q-card-section>
+      <QCard class="col-12 col-sm-6 col-md-3">
+        <QCardSection>
           <div class="text-h6">Unique Users</div>
           <div class="text-h4 text-positive">8,234</div>
           <div class="text-caption">+8% from last month</div>
-        </q-card-section>
-      </q-card>
+        </QCardSection>
+      </QCard>
 
-      <q-card class="col-12 col-sm-6 col-md-3">
-        <q-card-section>
+      <QCard class="col-12 col-sm-6 col-md-3">
+        <QCardSection>
           <div class="text-h6">Bounce Rate</div>
           <div class="text-h4 text-warning">23%</div>
           <div class="text-caption">-5% from last month</div>
-        </q-card-section>
-      </q-card>
+        </QCardSection>
+      </QCard>
 
-      <q-card class="col-12 col-sm-6 col-md-3">
-        <q-card-section>
+      <QCard class="col-12 col-sm-6 col-md-3">
+        <QCardSection>
           <div class="text-h6">Avg. Session</div>
           <div class="text-h4 text-info">4m 32s</div>
           <div class="text-caption">+12% from last month</div>
-        </q-card-section>
-      </q-card>
+        </QCardSection>
+      </QCard>
     </div>
 
-    <q-card class="q-mt-md">
-      <q-card-section>
+    <QCard class="q-mt-md">
+      <QCardSection>
         <div class="text-h6">Traffic Sources</div>
         <div class="row q-gutter-sm">
           <div class="col-12 col-sm-6 col-md-3">
@@ -56,15 +56,15 @@
             <div class="text-body1">Referral: 10%</div>
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+      </QCardSection>
+    </QCard>
 
     <div class="q-mt-md">
-      <q-btn color="primary" @click="$router.push('/admin')">
+      <QBtn color="primary" @click="$router.push('/admin')">
         Back to Admin
-      </q-btn>
+      </QBtn>
     </div>
-  </q-page>
+  </QPage>
 </template>
 
 <script setup lang="ts">

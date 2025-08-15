@@ -1,5 +1,5 @@
 mod appdata;
-mod config;
+pub mod config;
 mod storage;
 mod test;
 pub use appdata::AppData;
@@ -21,9 +21,6 @@ pub fn run() {
     })
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
-      config::cfg_cmd_get_schema,
-      config::cfg_cmd_get_data,
-      config::cfg_cmd_save_data,
       appdata::appdata_cmd_schema_names,
       appdata::appdata_cmd_schemas,
       appdata::appdata_cmd_get_schema,
@@ -31,6 +28,7 @@ pub fn run() {
       appdata::appdata_cmd_save_data,
       appdata::appdata_cmd_remove_data,
       appdata::appdata_cmd_exists_data,
+      appdata::appdata_cmd_find_next_available_key,
       greet,
     ])
     .run(tauri::generate_context!())
@@ -59,18 +57,18 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     log::debug!("app_data_dir={}", app_data_dir.display());
   }
 
-  if let Err(e) = config::setup(app_data_dir.clone()).await {
-    log::error!("Failed to setup config: {}", e);
-    app.exit(3);
-    return;
-  }
   if let Err(e) = storage::init(app_data_dir).await {
     log::error!("Failed to initialize storage: {}", e);
-    app.exit(4);
+    app.exit(3);
     return;
   }
   if let Err(e) = register_all_appdata().await {
     log::error!("Failed to register all appdata: {}", e);
+    app.exit(4);
+    return;
+  }
+  if let Err(e) = config::init_config().await {
+    log::error!("Failed to initialize config: {}", e);
     app.exit(5);
     return;
   }
@@ -88,6 +86,7 @@ fn greet(name: &str) -> String {
 }
 
 async fn register_all_appdata() -> anyhow::Result<()> {
+  config::AppConfig::register().await?;
   test::ProductConfig::register().await?;
   test::SystemSettings::register().await?;
   test::UserProfile::register().await?;

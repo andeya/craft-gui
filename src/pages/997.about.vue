@@ -1,17 +1,17 @@
 <template>
-  <q-page class="q-pa-lg">
+  <QPage class="q-pa-lg">
     <div class="max-width-800 mx-auto">
       <!-- README Content -->
       <div class="markdown-body" v-html="renderedReadme"></div>
 
       <!-- Navigation -->
       <div class="text-center q-mt-lg">
-        <q-btn color="primary" size="lg" @click="$router.push('/')">
+        <QBtn color="primary" size="lg" @click="$router.push('/')">
           Back to Home
-        </q-btn>
+        </QBtn>
       </div>
     </div>
-  </q-page>
+  </QPage>
 </template>
 
 <script setup lang="ts">

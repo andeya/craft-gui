@@ -27,18 +27,143 @@ This project implements an innovative routing metadata definition scheme that au
 
 For detailed documentation, see: [Router System Documentation](./docs/ROUTER_SYSTEM.md)
 
-## Development
+## Core Features
 
-```bash
-# Install dependencies
-pnpm install
+### 🚀 Automated Router System
 
-# Start development server
-pnpm dev
+CraftGUI features an innovative **Automated Router System** that combines automatic route generation with filename-based metadata and a clean composables architecture. This system provides a powerful, type-safe, and developer-friendly approach to Vue.js routing.
 
-# Build application
-pnpm build
+#### Key Features
+
+- **📁 Filename-Based Metadata**: Use numeric prefixes in filenames to define route metadata
+  - `001.example.vue` → `showInMenu: true, order: 1`
+  - `005.config.vue` → `showInMenu: true, order: 5`
+  - `about.vue` → `showInMenu: false, order: 0`
+- **🔄 Automatic Route Generation**: Routes are discovered from the file system
+- **📋 Menu Management**: Automatic menu generation based on metadata
+- **🏗️ Clean Architecture**: Four clear business domains with single responsibility
+- **🔧 Type Safety**: Full TypeScript support with proper interfaces
+- **🐛 Developer Experience**: Global console API for debugging and development
+
+#### Architecture
+
+The router system is organized into four clear business domains:
+
+1. **Route Management** - Route data management and querying
+2. **Current Route State** - Current route state and metadata
+3. **Navigation** - Route navigation operations
+4. **Global State** - Global state management and console debugging
+
+#### Quick Start
+
+```vue
+<!-- Example: 001.example.vue -->
+<template>
+  <q-page class="q-pa-md">
+    <h1>Example Page</h1>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+// Component logic here
+</script>
+
+<script lang="ts">
+// Only title, icon, and description allowed
+export const meta = {
+  title: "Example Page",
+  icon: "example",
+  description: "Example page description",
+};
+</script>
 ```
+
+#### Global Console API
+
+The system provides a global `$router` object in the browser console for debugging:
+
+```javascript
+// All available routes
+$router.allRoutes;
+
+// Menu routes (routes with showInMenu: true)
+$router.menuRoutes;
+
+// Route statistics
+$router.stats;
+
+// Find route by path
+$router.findRouteByPath("/target-path");
+```
+
+For detailed documentation, see: [Router System Documentation](./docs/ROUTER_SYSTEM.md)
+
+### Application Data Management System
+
+CraftGUI includes a comprehensive **Application Data Management System** that provides dynamic, schema-based form generation for managing both application data and configuration settings. This system offers a unified interface for handling structured data through JSON Schema 2020-12 specifications.
+
+#### Key Features
+
+- **🔄 Dynamic Form Generation**: Forms automatically generated from JSON Schema 2020-12 definitions
+- **📊 Dual Mode Operation**:
+  - **AppData Mode**: Manage user data, product configurations with multiple records
+  - **Config Mode**: Manage application settings with single configuration record
+- **✅ Built-in Validation**: Real-time validation with JSON Schema compliance
+- **🎨 Rich UI Components**: Change tracking, diff views, empty states, and compact mode
+- **🔒 Type Safety**: Full TypeScript support with compile-time and runtime validation
+- **⚡ High Performance**: Sled database backend with efficient data serialization
+- **🛡️ Security**: Local data storage with no network transmission
+- **🔧 Extensible**: Easy to add new schemas and field types
+
+#### Architecture
+
+The system consists of three main layers:
+
+1. **Frontend Components** - Vue.js components for data management UI
+2. **Backend Services** - Rust services for data persistence and validation
+3. **Schema System** - JSON Schema 2020-12 based validation and form generation
+
+#### Quick Start
+
+```vue
+<template>
+  <!-- AppData Mode - Multiple Records -->
+  <SchemaForm
+    mode="appdata"
+    schema-name="UserProfile"
+    :data-key="1"
+    title="User Profile Management"
+    @save="handleSave"
+  />
+
+  <!-- Config Mode - Application Settings -->
+  <SchemaForm
+    mode="config"
+    schema-name="AppConfig"
+    title="Application Settings"
+    @save="handleConfigSave"
+  />
+</template>
+```
+
+#### Predefined Schemas
+
+- **UserProfile**: User profile information
+- **ProductConfig**: Product configuration data
+- **SystemSettings**: System-wide settings
+- **AppConfig**: Application configuration
+
+#### Advanced Features
+
+- **Change Tracking**: Visual indicators for modified fields
+- **Diff View**: Before-save difference comparison with TextDiffDialog
+- **Validation Feedback**: Real-time validation with error messages
+- **Empty States**: User-friendly empty state handling
+- **Compact Mode**: Toggle between compact and full form layouts
+- **Key Management**: Automatic next available key detection
+- **Error Handling**: Comprehensive error reporting and recovery
+
+For detailed documentation, see: [Application Data Management System](./docs/APP_DATA_MANAGEMENT_SYSTEM.md)
 
 ## Tech Stack
 
@@ -48,6 +173,37 @@ pnpm build
 - **Cross Framework**: [Tauri](https://tauri.app/start/)
 - **Build Tool**: [Vite](https://vite.dev/guide/)
 - **Package Manager**: [pnpm](https://pnpm.io/)
+- **Database**: [Sled](https://github.com/spacejam/sled)
+
+## Project Structure
+
+```
+craft-gui/
+├── src/
+│   ├── components/
+│   │   ├── schemaform/           # Schema-based form components
+│   │   │   ├── SchemaForm.vue    # Main form component
+│   │   │   └── SchemaField.vue   # Individual field renderer
+│   │   └── ...
+│   ├── pages/
+│   │   ├── 004.appdata-demo.vue  # AppData system demo
+│   │   ├── 99.settings/          # Settings pages
+│   │   └── ...
+│   ├── utils/
+│   │   ├── tauri-commands.ts     # Tauri command constants
+│   │   ├── schema-constants.ts   # Schema definitions
+│   │   └── ui-constants.ts       # UI text constants
+│   └── types/
+│       └── schema.ts             # JSON Schema type definitions
+├── src-tauri/
+│   └── src/
+│       ├── appdata.rs            # AppData backend services
+│       └── config.rs             # Configuration backend services
+└── docs/
+    ├── APP_DATA_MANAGEMENT_SYSTEM.md          # Main documentation
+    ├── SCHEMA_FORM_SYSTEM.md                  # Schema system docs
+    └── ...
+```
 
 ## Getting Started
 
@@ -75,5 +231,20 @@ Install and init:
 
 ```shell
 # rm -rf src-tauri/gen
+pnpm install
+pnpm tauri android init
+pnpm tauri ios init
+```
 
+To develop and run the frontend in a Tauri window:
+
+```shell
+# For Desktop development, run:
+pnpm tauri dev
+
+# For Android development, run:
+pnpm tauri android dev
+
+# For iOS development, run:
+pnpm tauri ios dev
 ```

@@ -1,324 +1,809 @@
 <template>
-  <div class="schema-form">
-    <!-- Form Header -->
-    <div v-if="showHeader" class="form-header q-mb-md">
-      <q-card>
-        <q-card-section>
-          <div class="row items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold">{{ title || "Form" }}</h2>
-              <p v-if="description" class="text-gray-600">{{ description }}</p>
+  <div class="appdata-form">
+    <!-- Form Header with Schema Selection -->
+    <div v-if="showHeader" class="form-header q-mb-sm">
+      <QCard class="compact-header">
+        <QCardSection class="q-pa-sm">
+          <div class="row items-center justify-between q-col-gutter-sm">
+            <div class="col-grow">
+              <h3 class="text-lg font-semibold q-mb-xs">
+                {{ schema?.title || title || "SchemaForm Form" }}
+              </h3>
+              <p
+                v-if="schema?.description || description"
+                class="text-caption text-grey-6 q-mb-none"
+              >
+                {{ schema?.description || description }}
+              </p>
             </div>
-            <div class="row q-gutter-sm">
-              <q-btn
-                v-if="showResetButton"
-                icon="refresh"
-                color="secondary"
-                label="Reset"
-                :loading="isResetting"
-                @click="handleReset"
-              />
-              <q-btn
-                v-if="showSaveButton"
-                icon="save"
-                color="primary"
-                label="Save"
-                :disabled="!canSave"
-                :loading="isSaving"
-                @click="handleSave"
-              />
+            <div class="col-auto">
+              <div class="row q-col-gutter-sm">
+                <!-- Compact Mode Toggle -->
+                <QToggle
+                  v-model="compactMode"
+                  icon="compress"
+                  color="primary"
+                  size="sm"
+                  class="compact-toggle"
+                >
+                  <QTooltip>{{ UI_MESSAGES.TOOLTIPS.COMPACT_MODE }}</QTooltip>
+                </QToggle>
+
+                <!-- Schema Selection -->
+                <QSelect
+                  v-if="availableSchemas.length > 1"
+                  v-model="selectedSchema"
+                  :options="availableSchemas"
+                  option-label="name"
+                  option-value="name"
+                  label="Schema"
+                  dense
+                  outlined
+                  class="compact-select"
+                  @update:model-value="onSchemaChange"
+                />
+
+                <!-- Key Input -->
+                <QInput
+                  v-if="shouldShowKeyInput"
+                  v-model.number="currentDataKey"
+                  type="number"
+                  :label="`Key ${dataExists ? '(✓)' : '(✗)'}`"
+                  placeholder="Key"
+                  min="0"
+                  dense
+                  outlined
+                  :color="dataExists ? 'positive' : 'negative'"
+                  :bg-color="dataExists ? 'green-1' : 'red-1'"
+                  :class="['compact-input']"
+                  @update:model-value="(value) => onKeyChange(value as number)"
+                />
+
+                <!-- Action Buttons -->
+                <QBtnGroup
+                  v-if="
+                    (availableSchemas.length > 0 || props.schemaName) &&
+                    (shouldShowNewButton ||
+                      shouldShowReloadButton ||
+                      shouldShowSaveButton ||
+                      shouldShowDeleteButton)
+                  "
+                  flat
+                  rounded
+                  size="sm"
+                  class="compact-btn-group"
+                >
+                  <QBtn
+                    v-if="shouldShowNewButton"
+                    icon="add"
+                    color="grey-6"
+                    :disabled="!canCreate"
+                    @click="createNew"
+                  >
+                    <QTooltip>{{ UI_MESSAGES.TOOLTIPS.NEW }}</QTooltip>
+                  </QBtn>
+                  <QBtn
+                    v-if="shouldShowReloadButton"
+                    icon="refresh"
+                    color="info"
+                    :disabled="!canLoad"
+                    @click="reloadData"
+                  >
+                    <QTooltip>{{ UI_MESSAGES.TOOLTIPS.RELOAD }}</QTooltip>
+                  </QBtn>
+                  <QBtn
+                    v-if="shouldShowSaveButton"
+                    icon="save"
+                    color="primary"
+                    :disabled="!canSave"
+                    @click="saveData"
+                  >
+                    <QTooltip>{{ UI_MESSAGES.TOOLTIPS.SAVE }}</QTooltip>
+                  </QBtn>
+                  <QBtn
+                    v-if="shouldShowDeleteButton"
+                    icon="delete"
+                    color="grey-6"
+                    :disabled="!canDelete"
+                    @click="deleteData"
+                  >
+                    <QTooltip>{{ UI_MESSAGES.TOOLTIPS.DELETE }}</QTooltip>
+                  </QBtn>
+                </QBtnGroup>
+              </div>
             </div>
           </div>
-        </q-card-section>
-      </q-card>
+        </QCardSection>
+      </QCard>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-container">
-      <q-skeleton type="text" height="30px" class="q-mb-md" />
-      <q-skeleton type="rect" height="300px" />
+      <QSkeleton type="text" height="30px" class="q-mb-md" />
+      <QSkeleton type="rect" height="300px" />
     </div>
 
     <!-- Form Content -->
-    <div v-else-if="schema" class="form-content">
-      <!-- Schema Information -->
-      <q-card
-        v-if="showSchemaInfo && (schema.title || schema.description)"
-        class="bg-blue-1 q-mb-md"
-      >
-        <q-card-section class="q-pa-sm">
-          <div v-if="schema.title" class="text-weight-medium">
-            {{ schema.title }}
-          </div>
-          <div v-if="schema.description" class="text-caption">
-            {{ schema.description }}
-          </div>
-        </q-card-section>
-      </q-card>
-
+    <div v-else-if="schema || !availableSchemas.length" class="form-content">
       <!-- Form Fields -->
-      <div class="form-fields q-gutter-md">
-        <div v-for="key in schemaPropertyKeys" :key="key" class="q-mb-md">
-          <schema-field
-            :schema="resolveSchemaRef(schema!.properties![key], schema)"
-            :root-schema="schema"
-            :model-value="formData[key]"
-            :is-modified="showModifiedIndicators ? isFieldModified(key) : false"
-            :parent-key="key"
-            :check-nested-modification="
-              showModifiedIndicators ? isSpecificFieldModified : () => false
-            "
-            @update:model-value="handleFormDataUpdate(key, $event)"
-            @validation-error="handleValidationError(key, $event)"
-            @validation-success="handleValidationSuccess(key)"
-          />
-        </div>
+      <div
+        v-if="
+          schema &&
+          formData &&
+          Object.keys(formData).length > 0 &&
+          (dataExists || isNewMode)
+        "
+        class="form-fields"
+      >
+        <QCard class="form-fields-card">
+          <QCardSection>
+            <div class="form-fields-header q-mb-md">
+              <h4 class="text-h6 text-grey-8 q-mb-none">
+                {{
+                  isNewMode
+                    ? UI_MESSAGES.FORM.CREATE_NEW_DATA
+                    : UI_MESSAGES.FORM.EDIT_DATA
+                }}
+              </h4>
+              <p class="text-caption text-grey-6 q-mb-none">
+                {{
+                  isNewMode
+                    ? UI_MESSAGES.FORM.FILL_FIELDS_TO_CREATE
+                    : UI_MESSAGES.FORM.MODIFY_FIELDS_TO_UPDATE
+                }}
+              </p>
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div
+                v-for="key in Object.keys(formData)"
+                :key="key"
+                class="col-12 col-md-6"
+              >
+                <SchemaField
+                  v-if="schema.properties?.[key]"
+                  :schema="schema.properties[key]"
+                  :root-schema="schema"
+                  :model-value="formData[key]"
+                  :is-modified="isFieldModified(key)"
+                  :parent-key="key"
+                  :check-nested-modification="isNestedFieldModified"
+                  :compact="compactMode"
+                  @update:model-value="updateFormData(key, $event)"
+                  @validation-error="handleValidationError(key, $event)"
+                  @validation-success="handleValidationSuccess(key)"
+                />
+              </div>
+            </div>
+          </QCardSection>
+        </QCard>
+      </div>
+
+      <!-- No Data Message -->
+      <div v-else-if="!loading && !isNewMode" class="no-data-message">
+        <QCard class="empty-state-card">
+          <QCardSection class="text-center q-pa-xl">
+            <div class="empty-state-content">
+              <QIcon
+                :name="getEmptyStateIcon()"
+                size="4rem"
+                :color="getEmptyStateColor()"
+                class="q-mb-md"
+              />
+              <h4 class="text-h6 text-grey-8 q-mb-sm">
+                {{ getEmptyStateTitle() }}
+              </h4>
+              <p class="text-body2 text-grey-6 q-mb-md">
+                {{ getEmptyStateMessage() }}
+              </p>
+              <QBtn
+                v-if="shouldShowNewButton && !isNewMode && canCreate"
+                icon="add"
+                color="primary"
+                :label="UI_MESSAGES.FORM.CREATE_NEW"
+                @click="createNew"
+                class="q-mt-sm"
+              />
+            </div>
+          </QCardSection>
+        </QCard>
       </div>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="error-container">
-      <q-card class="bg-red-1">
-        <q-card-section>
+      <QCard class="bg-red-1">
+        <QCardSection>
           <div class="text-red-600">
-            <q-icon name="error" size="sm" />
+            <QIcon name="error" size="sm" />
             <span class="q-ml-sm">{{ error }}</span>
           </div>
-        </q-card-section>
-      </q-card>
+        </QCardSection>
+      </QCard>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, h } from "vue";
 import { useQuasar } from "quasar";
-import SchemaField from "./SchemaField.vue";
-import type { AppSchema } from "../../types/schema";
+import { invoke } from "@tauri-apps/api/core";
+import SchemaField from "@/components/schemaform/SchemaField.vue";
+import TextDiffDialog from "@/components/TextDiffDialog.vue";
+import type { AppSchema } from "@/types/schema";
+import { TAURI_COMMANDS } from "@/utils/tauri-commands";
+import {
+  getDialogTitle,
+  getCommonMessage,
+  getSuccessMessage,
+  getErrorMessage,
+  UI_MESSAGES,
+} from "@/utils/ui-constants";
 
-// Type definitions for better type safety
-type FormData = Record<string, any>;
-type ValidationErrors = Map<string, string>;
-
-interface SchemaFormProps {
-  // Schema and data
-  schema: AppSchema | null;
-  initialData: FormData;
-  originalData?: FormData; // Add optional originalData prop
-
-  // UI configuration
+// Type definitions
+interface SchemaOption {
+  name: string;
   title: string;
-  description: string;
-  showHeader: boolean;
-  showSchemaInfo: boolean;
-
-  // Button configuration
-  showResetButton: boolean;
-  showSaveButton: boolean;
-
-  // State
-  loading: boolean;
-  error: string;
-
-  // External validation
-  externalValidationErrors: ValidationErrors;
-
-  // Feature flags
-  showModifiedIndicators: boolean;
 }
 
-const props = withDefaults(defineProps<SchemaFormProps>(), {
-  schema: null,
-  initialData: () => ({}),
-  originalData: undefined,
+interface FormData {
+  [key: string]: any;
+}
+
+interface Props {
+  // Basic props
+  schemaName?: string;
+  dataKey?: number;
+  title?: string;
+  description?: string;
+
+  // Display control
+  showHeader?: boolean;
+  compact?: boolean;
+
+  // Button control
+  showSaveButton?: boolean;
+  showDeleteButton?: boolean;
+  showNewButton?: boolean;
+  showReloadButton?: boolean;
+
+  // Schema and data
+  availableSchemas?: SchemaOption[];
+
+  // Mode configuration
+  mode?: "appdata" | "config";
+  showDiffBeforeSave?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  schemaName: "",
+  dataKey: 1,
   title: "",
   description: "",
   showHeader: true,
-  showSchemaInfo: true,
-  showResetButton: true,
+  compact: true,
   showSaveButton: true,
-  loading: false,
-  error: "",
-  externalValidationErrors: () => new Map<string, string>(),
-  showModifiedIndicators: true,
+  showDeleteButton: true,
+  showNewButton: true,
+  showReloadButton: true,
+  availableSchemas: () => [],
+  mode: "appdata",
+  showDiffBeforeSave: false,
 });
 
-const emit = defineEmits<{
-  "update:model-value": [value: FormData];
-  save: [value: FormData];
-  reset: [value: FormData];
-  "validation-error": [key: string, error: string];
-  "validation-success": [key: string];
-}>();
+const emit = defineEmits([
+  "update:model-value",
+  "save",
+  "load",
+  "delete",
+  "reload",
+  "prepare",
+  "schema-change",
+  "key-change",
+  "validation-error",
+  "validation-success",
+  "notify",
+]);
 
 const $q = useQuasar();
 
-// Internal state
+// Notification helper function
+const showNotification = (type: string, message: string) => {
+  emit("notify", { type, message });
+};
+
+// ===== Internal State =====
+const schema = ref<AppSchema | null>(null);
 const formData = ref<FormData>({});
 const originalData = ref<FormData>({});
-const validationErrors = ref<ValidationErrors>(new Map());
+const validationErrors = ref(new Map<string, string>());
+const loading = ref(false);
+const error = ref("");
+const dataExists = ref(false);
+const selectedSchema = ref("");
+const currentDataKey = ref(props.dataKey);
+const compactMode = ref(props.compact);
+const isNewMode = ref(false); // Track if we're in "new" mode
 
-// Loading states
-const isResetting = ref<boolean>(false);
-const isSaving = ref<boolean>(false);
+// ===== Helper Functions =====
+const getInitialSchemaName = () => {
+  // If schemaName is provided, use it directly
+  if (props.schemaName) {
+    return props.schemaName;
+  }
+  // Otherwise, try to get from availableSchemas
+  return props.availableSchemas && props.availableSchemas.length > 0
+    ? props.availableSchemas[0].name
+    : "";
+};
 
-// Computed properties
-const schemaPropertyKeys = computed((): string[] => {
-  return Object.keys(props.schema?.properties || {});
-});
-
-const hasChanges = computed((): boolean => {
+// ===== Computed Properties =====
+const hasChanges = computed(() => {
   return JSON.stringify(formData.value) !== JSON.stringify(originalData.value);
 });
 
-const hasValidationErrors = computed((): boolean => {
+const hasValidationErrors = computed(() => {
   return validationErrors.value.size > 0;
 });
 
-const canSave = computed((): boolean => {
-  return hasChanges.value && !hasValidationErrors.value;
+const canLoad = computed(() => {
+  return (
+    selectedSchema.value &&
+    currentDataKey.value !== null &&
+    currentDataKey.value !== undefined
+  );
 });
 
-// Helper function to resolve $ref references
-const resolveSchemaRef = (
-  schema: AppSchema,
-  rootSchema: AppSchema | null
-): AppSchema => {
-  if (!schema || !rootSchema) return schema;
+const canSave = computed(() => {
+  return (
+    selectedSchema.value &&
+    !hasValidationErrors.value &&
+    (hasChanges.value || isNewMode.value) // Allow save only when there are changes or in new mode
+  );
+});
 
-  if (schema.$ref) {
-    const refPath = schema.$ref;
-    if (refPath.startsWith("#/$defs/")) {
-      const defName = refPath.substring(8);
-      const resolved = rootSchema.$defs?.[defName];
-      if (resolved) {
-        return { ...resolved, ...schema };
-      }
-    }
+const canDelete = computed(() => {
+  return selectedSchema.value && dataExists.value;
+});
+
+const canCreate = computed(() => {
+  return (
+    selectedSchema.value &&
+    currentDataKey.value !== null &&
+    currentDataKey.value !== undefined &&
+    !isNewMode.value // Disable when in new mode
+  );
+});
+
+// ===== Button Visibility Logic =====
+const shouldShowKeyInput = computed(() => {
+  return props.mode === "appdata";
+});
+
+const shouldShowNewButton = computed(() => {
+  return props.showNewButton && props.mode === "appdata";
+});
+
+const shouldShowDeleteButton = computed(() => {
+  return props.showDeleteButton && props.mode === "appdata";
+});
+
+const shouldShowReloadButton = computed(() => {
+  return props.showReloadButton; // Show reload button in both modes
+});
+
+const shouldShowSaveButton = computed(() => {
+  return props.showSaveButton; // Show save button in both modes
+});
+
+// ===== Core Methods =====
+const getInvokeCommand = (command: string): string => {
+  // Both appdata and config modes use the same appdata commands
+  switch (command) {
+    case "get_schema":
+      return TAURI_COMMANDS.APPDATA.GET_SCHEMA;
+    case "get_data":
+      return TAURI_COMMANDS.APPDATA.GET_DATA;
+    case "save_data":
+      return TAURI_COMMANDS.APPDATA.SAVE_DATA;
+    case "remove_data":
+      return TAURI_COMMANDS.APPDATA.REMOVE_DATA;
+    case "exists_data":
+      return TAURI_COMMANDS.APPDATA.EXISTS_DATA;
+    case "find_next_available_key":
+      return TAURI_COMMANDS.APPDATA.FIND_NEXT_AVAILABLE_KEY;
+    default:
+      throw new Error(`Unknown command: ${command}`);
   }
-
-  return schema;
 };
 
-// Utility functions
-const showNotification = (
-  type: "positive" | "negative",
-  message: string
-): void => {
-  $q.notify({
-    type,
-    message,
-    position: "top",
+const loadSchema = async (schemaName: string, showDialog = false) => {
+  if (!schemaName) {
+    if (showDialog) {
+      $q.dialog({
+        title: getDialogTitle("ERROR"),
+        message: getCommonMessage("SCHEMA_NAME_REQUIRED"),
+        ok: true,
+        persistent: true,
+      });
+    }
+    return;
+  }
+
+  loading.value = true;
+  error.value = "";
+
+  try {
+    const command = getInvokeCommand("get_schema");
+    const paramName = props.mode === "config" ? "schemaName" : "schemaName";
+    console.log(`[${props.mode}] Loading schema for: ${schemaName}`);
+    const schemaData = await invoke(command, {
+      [paramName]: schemaName,
+    });
+    console.log(`[${props.mode}] Schema loaded:`, schemaData);
+    schema.value = schemaData as AppSchema;
+
+    emit("schema-change", schemaName);
+  } catch (err) {
+    error.value = `${getErrorMessage("FAILED_TO_LOAD_SCHEMA")}: ${err}`;
+    console.error("Schema load error:", err);
+    if (showDialog) {
+      $q.dialog({
+        title: getDialogTitle("ERROR"),
+        message: `${getErrorMessage("FAILED_TO_LOAD_SCHEMA")}: ${err}`,
+        ok: true,
+        persistent: true,
+      });
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+const loadData = async (showDialog = false) => {
+  if (!canLoad.value) {
+    if (showDialog) {
+      $q.dialog({
+        title: getDialogTitle("ERROR"),
+        message: getCommonMessage("CANNOT_LOAD_DATA"),
+        ok: true,
+        persistent: true,
+      });
+    }
+    return;
+  }
+
+  loading.value = true;
+  error.value = "";
+
+  try {
+    const command = getInvokeCommand("get_data");
+    // config mode key=0
+    const key = props.mode === "config" ? 0 : currentDataKey.value;
+    const params = { schemaName: selectedSchema.value, key };
+
+    console.log(
+      `[${props.mode}] Loading data for schema: ${selectedSchema.value}, key: ${key}`
+    );
+    const dataBytes = await invoke(command, params);
+    console.log(`[${props.mode}] Data bytes received:`, dataBytes);
+
+    if (dataBytes && Array.isArray(dataBytes) && dataBytes.length > 0) {
+      const data = JSON.parse(
+        new TextDecoder().decode(new Uint8Array(dataBytes))
+      );
+      console.log(`[SchemaForm] Data decoded:`, data);
+
+      // Schema validation is now handled by the backend
+
+      formData.value = data;
+      originalData.value = JSON.parse(JSON.stringify(data));
+      dataExists.value = true;
+      isNewMode.value = false; // Exit new mode when loading existing data
+      emit("load", data);
+    } else {
+      console.log(`[SchemaForm] No data found, setting dataExists to false`);
+      // Ensure schema is loaded for form structure
+      if (!schema.value) {
+        await loadSchema(selectedSchema.value, showDialog);
+      }
+      // Clear form data when no data exists
+      formData.value = {};
+      originalData.value = {};
+      dataExists.value = false;
+      isNewMode.value = false; // Reset new mode when loading data
+      emit("load", null);
+    }
+    console.log(
+      `[SchemaForm] Data loaded, dataExists: ${
+        dataExists.value
+      }, schema: ${JSON.stringify(schema.value)}`
+    );
+  } catch (err) {
+    error.value = `${getErrorMessage("FAILED_TO_LOAD_DATA")}: ${err}`;
+    console.error("Data load error:", err);
+    if (showDialog) {
+      $q.dialog({
+        title: getDialogTitle("ERROR"),
+        message: `${getErrorMessage("FAILED_TO_LOAD_DATA")}: ${err}`,
+        ok: true,
+        persistent: true,
+      });
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+const saveData = async () => {
+  if (!canSave.value) return;
+
+  // Schema validation is now handled by the backend
+
+  // Show diff dialog if enabled
+  if (props.showDiffBeforeSave && hasChanges.value) {
+    $q.dialog({
+      title: getDialogTitle("SAVE_DATA"),
+      component: h(TextDiffDialog, {
+        currentText: JSON.stringify(formData.value, null, 2),
+        originalText: JSON.stringify(originalData.value, null, 2),
+        subtitle: "Review the differences between current and original data",
+        confirmButtonLabel: UI_MESSAGES.FORM.SAVE,
+        cancelButtonColor: "secondary",
+      }),
+      cancel: true,
+      persistent: true,
+      style: `min-width: 60vw; max-width: 85vw;`,
+    }).onOk(async () => {
+      await performSave();
+    });
+  } else {
+    $q.dialog({
+      title: getDialogTitle("SAVE_DATA"),
+      message: getCommonMessage("SAVE_CONFIRMATION"),
+      cancel: true,
+      persistent: true,
+    }).onOk(async () => {
+      await performSave();
+    });
+  }
+};
+
+const performSave = async () => {
+  loading.value = true;
+  error.value = "";
+
+  try {
+    const command = getInvokeCommand("save_data");
+    // config 模式下使用 key=0
+    const key = props.mode === "config" ? 0 : currentDataKey.value;
+    const dataWithKey = { ...formData.value, id: key };
+    const dataBytes = new TextEncoder().encode(JSON.stringify(dataWithKey));
+
+    const params = {
+      schemaName: selectedSchema.value,
+      data: Array.from(dataBytes),
+    };
+
+    console.log(
+      `[${props.mode}] Saving data for schema: ${selectedSchema.value}, key: ${key}`
+    );
+    console.log(`[${props.mode}] Data to save:`, dataWithKey);
+    await invoke(command, params);
+    console.log(`[${props.mode}] Data saved successfully`);
+
+    // Update original data and mark as existing
+    originalData.value = JSON.parse(JSON.stringify(formData.value));
+    dataExists.value = true;
+    isNewMode.value = false; // Exit new mode after successful save
+
+    showNotification(
+      "positive",
+      dataExists.value
+        ? getSuccessMessage("DATA_UPDATED")
+        : getSuccessMessage("NEW_DATA_CREATED")
+    );
+
+    emit("save", formData.value);
+  } catch (err) {
+    error.value = `${getErrorMessage("FAILED_TO_SAVE_DATA")}: ${err}`;
+    showNotification(
+      "negative",
+      `${getErrorMessage("FAILED_TO_SAVE_DATA")}: ${err}`
+    );
+    console.error("Data save error:", err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const createNew = async () => {
+  if (!canCreate.value) return;
+
+  try {
+    // Find the next available key starting from current key
+    const startKey = props.mode === "config" ? 0 : currentDataKey.value;
+    console.log(
+      `[${props.mode}] Finding next available key for schema: ${selectedSchema.value}, starting from: ${startKey}`
+    );
+
+    const command = getInvokeCommand("find_next_available_key");
+    const nextKey = await invoke(command, {
+      schemaName: selectedSchema.value,
+      startKey,
+    });
+    console.log(`[${props.mode}] Next available key:`, nextKey);
+
+    // Update the current key to the next available key
+    currentDataKey.value = nextKey as number;
+
+    // Load schema and generate default values
+    await loadSchema(selectedSchema.value, false); // Don't show dialog for create new
+
+    // Generate default values for new data
+    if (schema.value && schema.value.properties) {
+      const defaultData: FormData = {};
+      for (const [key, prop] of Object.entries(schema.value.properties)) {
+        if (prop.default !== undefined) {
+          defaultData[key] = prop.default;
+        } else {
+          switch (prop.type) {
+            case "string":
+              defaultData[key] = "";
+              break;
+            case "integer":
+            case "number":
+              defaultData[key] = 0;
+              break;
+            case "boolean":
+              defaultData[key] = false;
+              break;
+            case "array":
+              defaultData[key] = [];
+              break;
+            case "object":
+              defaultData[key] = {};
+              break;
+            default:
+              defaultData[key] = null;
+          }
+        }
+      }
+      formData.value = defaultData;
+      originalData.value = JSON.parse(JSON.stringify(defaultData));
+    }
+    dataExists.value = false;
+    isNewMode.value = true; // Enter new mode
+
+    showNotification(
+      "info",
+      `Form prepared for new data with key ${nextKey}. Fill in the fields and click ${UI_MESSAGES.FORM.SAVE} to create.`
+    );
+
+    emit("prepare", formData.value); // Emit prepare event instead of create
+    emit("key-change", nextKey);
+  } catch (err) {
+    error.value = `${getErrorMessage("FAILED_TO_PREPARE_NEW_DATA")}: ${err}`;
+    showNotification(
+      "negative",
+      `${getErrorMessage("FAILED_TO_PREPARE_NEW_DATA")}: ${err}`
+    );
+    console.error("Data creation preparation error:", err);
+  }
+};
+
+const deleteData = async () => {
+  if (!canDelete.value) return;
+
+  $q.dialog({
+    title: getDialogTitle("DELETE_DATA"),
+    message: getCommonMessage("DELETE_CONFIRMATION"),
+    cancel: true,
+    persistent: true,
+  }).onOk(async () => {
+    loading.value = true;
+    error.value = "";
+
+    try {
+      const command = getInvokeCommand("remove_data");
+      // config 模式下使用 key=0
+      const key = props.mode === "config" ? 0 : currentDataKey.value;
+
+      console.log(
+        `[${props.mode}] Deleting data for schema: ${selectedSchema.value}, key: ${key}`
+      );
+      await invoke(command, {
+        schemaName: selectedSchema.value,
+        key,
+      });
+      console.log(`[${props.mode}] Data deleted successfully`);
+
+      await loadSchema(selectedSchema.value);
+      dataExists.value = false;
+
+      showNotification("positive", getSuccessMessage("DATA_DELETED"));
+
+      emit("delete");
+    } catch (err) {
+      error.value = `${getErrorMessage("FAILED_TO_DELETE_DATA")}: ${err}`;
+      showNotification(
+        "negative",
+        `${getErrorMessage("FAILED_TO_DELETE_DATA")}: ${err}`
+      );
+      console.error("Data delete error:", err);
+    } finally {
+      loading.value = false;
+    }
   });
 };
 
-const showErrorNotification = (message: string): void => {
-  showNotification("negative", message);
+const reloadData = async () => {
+  if (!canLoad.value) return;
+
+  // Check if there are unsaved changes
+  if (hasChanges.value) {
+    // Show confirmation dialog if there are changes
+    $q.dialog({
+      title: getDialogTitle("RELOAD_DATA"),
+      message: getCommonMessage("RELOAD_CONFIRMATION"),
+      cancel: true,
+      persistent: true,
+    }).onOk(async () => {
+      await handleReloadWithFeedback();
+    });
+  } else {
+    // Directly reload if no changes
+    await handleReloadWithFeedback();
+  }
 };
 
-const showSuccessNotification = (message: string): void => {
-  showNotification("positive", message);
+const handleReloadWithFeedback = async () => {
+  // Clear previous error
+  error.value = "";
+
+  await loadData(true); // Pass true to show dialog on error
+
+  // Check if there was an error
+  if (error.value) {
+    // Error was already shown via dialog, just log it
+    console.error("Reload error:", error.value);
+  } else {
+    // Show success notification
+    showNotification("positive", getSuccessMessage("DATA_RELOADED"));
+    emit("reload", formData.value);
+  }
 };
 
-// Watch for prop changes
-watch(
-  () => props.initialData,
-  (newData) => {
-    if (newData && Object.keys(newData).length > 0) {
-      formData.value = { ...newData };
-      // Only set originalData if it's empty (first load) or if explicitly reset
-      if (Object.keys(originalData.value).length === 0) {
-        originalData.value = JSON.parse(JSON.stringify(newData));
-      }
-    }
-  },
-  { immediate: true, deep: true }
-);
-
-// Watch for external originalData updates
-watch(
-  () => props.originalData,
-  (newOriginalData) => {
-    if (newOriginalData && Object.keys(newOriginalData).length > 0) {
-      originalData.value = JSON.parse(JSON.stringify(newOriginalData));
-    }
-  },
-  { deep: true }
-);
-
-watch(
-  () => props.externalValidationErrors,
-  (newErrors) => {
-    // Merge external validation errors
-    const mergedErrors = new Map<string, string>();
-    validationErrors.value.forEach((value, key) =>
-      mergedErrors.set(key, value)
-    );
-    newErrors.forEach((value, key) => mergedErrors.set(key, value));
-    validationErrors.value = mergedErrors;
-  },
-  { deep: true }
-);
-
-// Methods
-const handleFormDataUpdate = (key: string, value: any): void => {
-  // Create a new object to avoid reference issues
-  formData.value = { ...formData.value, [key]: value };
+const updateFormData = (key: string, value: any) => {
+  formData.value[key] = value;
   emit("update:model-value", formData.value);
 };
 
-const handleValidationError = (key: string, error: string): void => {
+const handleValidationError = (key: string, error: string) => {
   validationErrors.value.set(key, error);
   emit("validation-error", key, error);
 };
 
-const handleValidationSuccess = (key: string): void => {
+const handleValidationSuccess = (key: string) => {
   validationErrors.value.delete(key);
   emit("validation-success", key);
 };
 
-const isFieldModified = (fieldPath: string): boolean => {
+const isFieldModified = (fieldPath: string) => {
   const currentValue = formData.value[fieldPath];
   const originalValue = originalData.value[fieldPath];
 
-  // For object types, we need to check if any nested properties have changed
   if (
     typeof currentValue === "object" &&
     currentValue !== null &&
-    !Array.isArray(currentValue) &&
-    typeof originalValue === "object" &&
-    originalValue !== null &&
-    !Array.isArray(originalValue)
+    !Array.isArray(currentValue)
   ) {
-    // Check if any nested properties have changed
-    const currentKeys = Object.keys(currentValue);
-    const originalKeys = Object.keys(originalValue);
-
-    // If keys are different, it's modified
-    if (currentKeys.length !== originalKeys.length) {
-      return true;
-    }
-
-    // Check each key
-    for (const key of currentKeys) {
-      if (
-        JSON.stringify(currentValue[key]) !== JSON.stringify(originalValue[key])
-      ) {
-        return true;
-      }
-    }
-
     return false;
   }
 
   return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
 };
 
-// Check if a specific nested field is modified
-const isSpecificFieldModified = (
-  parentKey: string,
-  childKey: string
-): boolean => {
+const isNestedFieldModified = (parentKey: string, childKey: string) => {
   const currentParent = formData.value[parentKey] || {};
   const originalParent = originalData.value[parentKey] || {};
   const currentValue = currentParent[childKey];
@@ -326,71 +811,147 @@ const isSpecificFieldModified = (
   return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
 };
 
-const handleReset = (): void => {
-  $q.dialog({
-    title: "Reset Form",
-    message:
-      "Are you sure you want to reset all fields to their original values?",
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    try {
-      isResetting.value = true;
-      formData.value = JSON.parse(JSON.stringify(originalData.value));
-      validationErrors.value.clear();
-      emit("reset", formData.value);
-      emit("update:model-value", formData.value);
-      showSuccessNotification("Form reset successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      showErrorNotification(`Failed to reset form: ${message}`);
-    } finally {
-      isResetting.value = false;
-    }
-  });
+const onSchemaChange = (newSchema: SchemaOption) => {
+  selectedSchema.value = newSchema.name; // Store the schema name string, not the object
+  loadSchema(newSchema.name);
 };
 
-const handleSave = (): void => {
-  if (hasValidationErrors.value) {
-    showErrorNotification("Please fix validation errors before saving");
-    return;
+const onKeyChange = (newKey: number) => {
+  currentDataKey.value = newKey;
+  isNewMode.value = false; // Exit new mode when key changes
+  emit("key-change", newKey);
+
+  // Always load data when key changes to update dataExists status
+  if (selectedSchema.value) {
+    loadData();
   }
-
-  $q.dialog({
-    title: "Save Form",
-    message: "Are you sure you want to save the current form data?",
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    try {
-      isSaving.value = true;
-      emit("save", formData.value);
-      showSuccessNotification("Form saved successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      showErrorNotification(`Failed to save form: ${message}`);
-    } finally {
-      isSaving.value = false;
-    }
-  });
 };
+
+// ===== Empty State Helper Methods =====
+const getEmptyStateIcon = () => {
+  if (!props.availableSchemas.length) {
+    return "settings";
+  }
+  if (isNewMode.value) {
+    return "edit";
+  }
+  if (dataExists.value) {
+    return "info";
+  }
+  return "add_circle";
+};
+
+const getEmptyStateColor = () => {
+  if (!props.availableSchemas.length) {
+    return "grey-6";
+  }
+  if (isNewMode.value) {
+    return "primary";
+  }
+  if (dataExists.value) {
+    return "info";
+  }
+  return "grey-6";
+};
+
+const getEmptyStateTitle = () => {
+  if (!props.availableSchemas.length) {
+    return UI_MESSAGES.EMPTY_STATE.NO_SCHEMAS_AVAILABLE;
+  }
+  if (isNewMode.value) {
+    return UI_MESSAGES.EMPTY_STATE.READY_TO_CREATE;
+  }
+  if (dataExists.value) {
+    return UI_MESSAGES.EMPTY_STATE.NO_FORM_FIELDS;
+  }
+  return UI_MESSAGES.EMPTY_STATE.NO_DATA_FOUND;
+};
+
+const getEmptyStateMessage = () => {
+  if (!props.availableSchemas.length) {
+    return UI_MESSAGES.EMPTY_STATE.CONFIGURE_SCHEMAS;
+  }
+  if (isNewMode.value) {
+    return UI_MESSAGES.EMPTY_STATE.FORM_READY_FOR_NEW_DATA.replace(
+      "{key}",
+      currentDataKey.value.toString()
+    );
+  }
+  if (dataExists.value) {
+    return UI_MESSAGES.EMPTY_STATE.NO_FORM_FIELDS_AVAILABLE;
+  }
+  return UI_MESSAGES.EMPTY_STATE.NO_DATA_FOUND_FOR_KEY.replace(
+    "{key}",
+    currentDataKey.value.toString()
+  );
+};
+
+// Watch for prop changes
+watch(
+  () => props.schemaName,
+  () => {
+    const newSelectedSchema = getInitialSchemaName();
+    if (newSelectedSchema && newSelectedSchema !== selectedSchema.value) {
+      selectedSchema.value = newSelectedSchema;
+      loadSchema(newSelectedSchema);
+    }
+  }
+);
+
+watch(
+  () => props.availableSchemas,
+  () => {
+    const newSelectedSchema = getInitialSchemaName();
+    if (newSelectedSchema && newSelectedSchema !== selectedSchema.value) {
+      selectedSchema.value = newSelectedSchema;
+      loadSchema(newSelectedSchema);
+    }
+  },
+  { deep: true }
+);
+
+watch(
+  () => props.dataKey,
+  (newKey) => {
+    if (newKey !== currentDataKey.value) {
+      currentDataKey.value = newKey;
+      // Always load data when dataKey prop changes
+      loadData();
+    }
+  }
+);
+
+// Initialize on mount
+onMounted(async () => {
+  // Initialize selectedSchema with proper value
+  const initialSchemaName = getInitialSchemaName();
+  if (initialSchemaName) {
+    selectedSchema.value = initialSchemaName;
+    await loadSchema(initialSchemaName);
+    // Always try to load data when schema is available
+    await loadData();
+  }
+});
 
 // Expose methods for parent components
 defineExpose({
-  getFormData: (): FormData => formData.value,
-  setFormData: (data: FormData): void => {
+  getFormData: () => formData.value,
+  setFormData: (data: FormData) => {
     formData.value = { ...data };
     originalData.value = JSON.parse(JSON.stringify(data));
   },
-  resetForm: handleReset,
-  saveForm: handleSave,
+  loadSchema,
+  loadData,
+  saveData,
+  deleteData,
   hasChanges,
   hasValidationErrors,
+  dataExists,
 });
 </script>
 
 <style scoped>
-.schema-form {
+.appdata-form {
   width: 100%;
 }
 
@@ -398,16 +959,107 @@ defineExpose({
   margin-bottom: 1rem;
 }
 
-.loading-container,
-.error-container {
-  padding: 1rem;
+.compact-header {
+  border-radius: 8px;
 }
 
-.form-content {
-  width: 100%;
+.compact-header .q-card__section {
+  padding: 0.75rem;
+}
+
+.compact-select {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.compact-input {
+  width: 90px;
+  min-width: 90px;
+}
+
+.compact-btn-group {
+  min-width: auto;
+}
+
+.compact-btn-group .q-btn {
+  min-width: 32px;
+  padding: 0 8px;
+}
+
+.compact-toggle {
+  min-width: 32px;
+}
+
+/* ===== Key Input Status Styles ===== */
+.compact-input.q-field--focused .q-field__control {
+  border-color: var(--q-primary, #1976d2) !important;
+}
+
+.compact-input.q-field--error .q-field__control {
+  border-color: var(--q-negative, #c10015) !important;
+}
+
+.loading-container {
+  padding: 0.5rem;
 }
 
 .form-fields {
   width: 100%;
+}
+
+.form-fields-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.form-fields-header {
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1rem;
+}
+
+.error-container {
+  padding: 0.5rem;
+}
+
+.no-data-message {
+  padding: 0.5rem;
+}
+
+.empty-state-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.empty-state-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 599px) {
+  .compact-select {
+    min-width: 120px;
+    max-width: 180px;
+  }
+
+  .compact-input {
+    width: 80px;
+    min-width: 80px;
+  }
+
+  .form-header .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-header .col-auto {
+    margin-top: 0.5rem;
+  }
+
+  .form-header .row.q-col-gutter-sm {
+    justify-content: center;
+  }
 }
 </style>

@@ -1,24 +1,23 @@
 <template>
-  <div class="schema-field">
-    <q-form @submit="handleSubmit">
+  <div class="schema-field" :class="{ 'compact-mode': compact }">
+    <QForm @submit="handleSubmit">
       <!-- Field Label and Description -->
       <div class="field-header">
         <label class="text-base font-medium q-mb-sm block">
           {{ fieldDisplayName }}
           <span v-if="resolvedSchema.required" class="text-red-500"> *</span>
+          <span
+            v-if="resolvedSchema.description && !compact"
+            class="field-description"
+          >
+            {{ resolvedSchema.description }}
+          </span>
         </label>
       </div>
 
-      <p
-        v-if="resolvedSchema.description"
-        class="text-sm text-gray-500 q-mb-sm"
-      >
-        {{ resolvedSchema.description }}
-      </p>
-
       <!-- Validation Error Message -->
       <div v-if="validationError" class="validation-error q-mb-sm">
-        <q-icon name="error" color="red" size="sm" />
+        <QIcon name="error" color="red" size="sm" />
         <span class="text-red-600 text-sm q-ml-xs">{{ validationError }}</span>
       </div>
 
@@ -28,30 +27,34 @@
         :class="{ 'field-modified': isThisFieldModified }"
       >
         <!-- String Input -->
-        <q-input
+        <QInput
           v-if="isStringInput"
           :model-value="stringValue"
           :placeholder="inputPlaceholder"
           :disabled="resolvedSchema.readOnly"
           :rules="validationRules"
+          :dense="compact"
+          :outlined="compact"
           @update:model-value="handleValueChange"
           @blur="validateField"
         />
 
         <!-- Select Input -->
-        <q-select
+        <QSelect
           v-else-if="isSelectInput"
           :model-value="stringValue"
           :options="resolvedSchema.enum || []"
           :label="fieldDisplayName"
           :disabled="resolvedSchema.readOnly"
           :rules="validationRules"
+          :dense="compact"
+          :outlined="compact"
           @update:model-value="handleValueChange"
           @blur="validateField"
         />
 
         <!-- Number Input -->
-        <q-input
+        <QInput
           v-else-if="isNumberInput"
           :model-value="numberValue"
           type="number"
@@ -60,16 +63,19 @@
           :placeholder="inputPlaceholder"
           :disabled="resolvedSchema.readOnly"
           :rules="validationRules"
+          :dense="compact"
+          :outlined="compact"
           @update:model-value="handleValueChange"
           @blur="validateField"
         />
 
         <!-- Boolean Input -->
-        <q-toggle
+        <QToggle
           v-else-if="isBooleanInput"
           :model-value="booleanValue"
           :label="fieldDisplayName"
           :disabled="resolvedSchema.readOnly"
+          :dense="compact"
           @update:model-value="handleValueChange"
         />
       </div>
@@ -82,13 +88,14 @@
             :key="key"
             class="q-mb-md"
           >
-            <schema-field
+            <SchemaField
               :schema="prop"
               :root-schema="props.rootSchema"
               :model-value="getNestedValue(key)"
               :is-modified="isNestedFieldModified(key)"
               :parent-key="key"
               :check-nested-modification="props.checkNestedModification"
+              :compact="compact"
               @update:model-value="handleNestedValueUpdate(key, $event)"
               @validation-error="handleNestedValidationError"
               @validation-success="handleNestedValidationSuccess"
@@ -99,7 +106,7 @@
 
       <!-- Array Input -->
       <div v-if="isArrayType" class="array-container">
-        <q-input
+        <QInput
           type="textarea"
           v-model="arrayStringValue"
           :placeholder="inputPlaceholder"
@@ -113,7 +120,7 @@
           Enter a valid JSON array
         </div>
       </div>
-    </q-form>
+    </QForm>
   </div>
 </template>
 
@@ -139,6 +146,7 @@ interface SchemaFieldProps {
   isModified: boolean;
   parentKey: string;
   checkNestedModification: (parentKey: string, childKey: string) => boolean;
+  compact?: boolean;
 }
 
 const props = withDefaults(defineProps<SchemaFieldProps>(), {
@@ -146,6 +154,7 @@ const props = withDefaults(defineProps<SchemaFieldProps>(), {
   isModified: false,
   parentKey: "",
   checkNestedModification: () => false,
+  compact: false,
 });
 
 const emit = defineEmits<{
@@ -491,27 +500,63 @@ const handleSubmit = (): void => {
 
 <style scoped>
 .schema-field {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #f0f0f0;
   transition: all 0.2s ease;
+  height: 100%; /* Ensure full height for grid alignment */
+  display: flex;
+  flex-direction: column;
 }
 
 .schema-field:last-child {
   border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* ===== Compact Mode Styles ===== */
+.schema-field.compact-mode {
+  margin-bottom: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
+.schema-field.compact-mode .field-header {
+  margin-bottom: 0.125rem;
+}
+
+.schema-field.compact-mode .field-header label {
+  margin-bottom: 0.125rem;
+  font-size: 0.875rem;
+}
+
+.schema-field.compact-mode .validation-error {
+  padding: 4px 6px;
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+}
+
+.schema-field.compact-mode .object-container {
+  margin-left: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.schema-field.compact-mode .array-container {
+  margin-top: 0.25rem;
 }
 
 .field-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex: 1; /* Fill remaining space */
 }
 
 .field-input-wrapper.field-modified {
-  border-left: 4px solid #ffc107;
-  padding-left: 12px;
-  border-radius: 4px;
+  border-left: 3px solid #ffc107;
+  padding-left: 8px;
+  border-radius: 3px;
 }
 
 .field-input-wrapper .q-field,
@@ -529,8 +574,24 @@ const handleSubmit = (): void => {
 
 .field-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  margin-bottom: 0.125rem;
+}
+
+.field-header label {
+  margin-bottom: 0.125rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.field-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: normal;
+  margin-top: 0.0625rem;
+  line-height: 1.2;
 }
 
 .validation-error {
@@ -539,6 +600,27 @@ const handleSubmit = (): void => {
   background-color: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: 4px;
-  padding: 8px 12px;
+  padding: 4px 6px;
+  margin-top: 0.125rem;
+  font-size: 0.875rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 599px) {
+  .schema-field {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .field-input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .field-input-wrapper .q-field,
+  .field-input-wrapper .q-toggle {
+    width: 100%;
+  }
 }
 </style>
