@@ -76,6 +76,7 @@
                   :parent-key="key"
                   :check-nested-modification="isNestedFieldModified"
                   :compact="compactMode"
+                  :field-key="key"
                   @update:model-value="handleFieldUpdate(key, $event)"
                   @validation-error="handleValidationError"
                   @validation-success="handleValidationSuccess"
@@ -158,7 +159,7 @@
           <QIcon name="schema" color="grey-6" size="3em" />
           <div class="text-h6 q-mt-md text-grey-6">No Schema Available</div>
           <div class="text-body2 text-grey-6">
-            Please provide a valid schema name
+            Please provide a valid schema id
           </div>
         </QCardSection>
       </QCard>
@@ -180,7 +181,7 @@ type ValidationErrors = Map<string, string>;
 
 interface SchemaApiFormProps {
   // Core form properties
-  schemaName: string;
+  schemaId: string;
   modelValue?: FormData;
   initialData?: FormData;
 
@@ -277,8 +278,8 @@ const getInvokeCommand = (command: string): string => {
 
 // Methods
 const loadSchema = async (): Promise<void> => {
-  if (!props.schemaName) {
-    error.value = "Schema name is required";
+  if (!props.schemaId) {
+    error.value = "Schema id is required";
     emit("schema-error", error.value);
     return;
   }
@@ -288,9 +289,9 @@ const loadSchema = async (): Promise<void> => {
 
   try {
     const command = getInvokeCommand("get_schema");
-    console.log(`[SchemaApiForm] Loading schema: ${props.schemaName}`);
+    console.log(`[SchemaApiForm] Loading schema: ${props.schemaId}`);
     const schemaData = await invoke(command, {
-      schemaName: props.schemaName,
+      schemaId: props.schemaId,
     });
 
     console.log(`[SchemaApiForm] Schema loaded:`, schemaData);
@@ -474,9 +475,9 @@ const handleCancel = (): void => {
 
 // Watchers
 watch(
-  () => props.schemaName,
+  () => props.schemaId,
   () => {
-    if (props.schemaName) {
+    if (props.schemaId) {
       loadSchema();
     }
   }
@@ -501,7 +502,7 @@ watch(
 
 // Lifecycle
 onMounted(() => {
-  if (props.schemaName) {
+  if (props.schemaId) {
     loadSchema();
   }
 });

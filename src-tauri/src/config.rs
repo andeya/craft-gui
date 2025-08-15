@@ -89,7 +89,7 @@ impl Entity for AppConfig {
   type Key = u32;
 
   fn store_name() -> &'static str {
-    "app_config"
+    "AppConfig"
   }
 
   fn get_key(&self) -> &Self::Key {

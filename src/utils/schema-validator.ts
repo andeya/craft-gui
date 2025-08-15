@@ -418,7 +418,7 @@ export class SchemaValidator {
       warnings.push(...result.warnings);
     }
 
-    // Check for duplicate schema names
+    // Check for duplicate schema ids
     const names = Object.keys(schemas);
     const duplicates = names.filter(
       (name, index) => names.indexOf(name) !== index
@@ -426,8 +426,8 @@ export class SchemaValidator {
     if (duplicates.length > 0) {
       errors.push({
         path: "",
-        message: `Duplicate schema names found: ${duplicates.join(", ")}`,
-        code: "DUPLICATE_SCHEMA_NAMES",
+        message: `Duplicate schema ids found: ${duplicates.join(", ")}`,
+        code: "DUPLICATE_SCHEMA_IDS",
       });
     }
 

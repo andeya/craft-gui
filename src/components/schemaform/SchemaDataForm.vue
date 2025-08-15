@@ -62,7 +62,7 @@
                 <!-- Action Buttons -->
                 <QBtnGroup
                   v-if="
-                    (availableSchemas.length > 0 || props.schemaName) &&
+                    (availableSchemas.length > 0 || props.schemaId) &&
                     (shouldShowNewButton ||
                       shouldShowReloadButton ||
                       shouldShowSaveButton ||
@@ -164,6 +164,7 @@
                 :parent-key="key"
                 :check-nested-modification="isNestedFieldModified"
                 :compact="compactMode"
+                :field-key="key"
                 @update:model-value="updateFormData(key, $event)"
                 @validation-error="handleValidationError(key, $event)"
                 @validation-success="handleValidationSuccess(key)"
@@ -248,7 +249,7 @@ interface FormData {
 
 interface Props {
   // Basic props
-  schemaName?: string;
+  schemaId?: string;
   dataKey?: number;
   title?: string;
   description?: string;
@@ -272,7 +273,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  schemaName: "",
+  schemaId: "",
   dataKey: 1,
   title: "",
   description: "",
@@ -323,10 +324,10 @@ const compactMode = ref(props.compact);
 const isNewMode = ref(false); // Track if we're in "new" mode
 
 // ===== Helper Functions =====
-const getInitialSchemaName = () => {
-  // If schemaName is provided, use it directly
-  if (props.schemaName) {
-    return props.schemaName;
+const getInitialSchemaId = () => {
+  // If schemaId is provided, use it directly
+  if (props.schemaId) {
+    return props.schemaId;
   }
   // Otherwise, try to get from availableSchemas
   return props.availableSchemas && props.availableSchemas.length > 0
@@ -414,12 +415,12 @@ const getInvokeCommand = (command: string): string => {
   }
 };
 
-const loadSchema = async (schemaName: string, showDialog = false) => {
-  if (!schemaName) {
+const loadSchema = async (schemaId: string, showDialog = false) => {
+  if (!schemaId) {
     if (showDialog) {
       $q.dialog({
         title: getDialogTitle("ERROR"),
-        message: getCommonMessage("SCHEMA_NAME_REQUIRED"),
+        message: getCommonMessage("SCHEMA_ID_REQUIRED"),
         ok: true,
         persistent: true,
       });
@@ -432,15 +433,15 @@ const loadSchema = async (schemaName: string, showDialog = false) => {
 
   try {
     const command = getInvokeCommand("get_schema");
-    const paramName = props.mode === "config" ? "schemaName" : "schemaName";
-    console.log(`[${props.mode}] Loading schema for: ${schemaName}`);
+    const paramName = props.mode === "config" ? "schemaId" : "schemaId";
+    console.log(`[${props.mode}] Loading schema for: ${schemaId}`);
     const schemaData = await invoke(command, {
-      [paramName]: schemaName,
+      [paramName]: schemaId,
     });
     console.log(`[${props.mode}] Schema loaded:`, schemaData);
     schema.value = schemaData as AppSchema;
 
-    emit("schema-change", schemaName);
+    emit("schema-change", schemaId);
   } catch (err) {
     error.value = `${getErrorMessage("FAILED_TO_LOAD_SCHEMA")}: ${err}`;
     console.error("Schema load error:", err);
@@ -477,7 +478,7 @@ const loadData = async (showDialog = false) => {
     const command = getInvokeCommand("get_data");
     // config mode key=0
     const key = props.mode === "config" ? 0 : currentDataKey.value;
-    const params = { schemaName: selectedSchema.value, key };
+    const params = { schemaId: selectedSchema.value, key };
 
     console.log(
       `[${props.mode}] Loading data for schema: ${selectedSchema.value}, key: ${key}`
@@ -590,7 +591,7 @@ const performSave = async () => {
     const dataBytes = new TextEncoder().encode(JSON.stringify(dataWithKey));
 
     const params = {
-      schemaName: selectedSchema.value,
+      schemaId: selectedSchema.value,
       data: Array.from(dataBytes),
     };
 
@@ -638,7 +639,7 @@ const createNew = async () => {
 
     const command = getInvokeCommand("find_next_available_key");
     const nextKey = await invoke(command, {
-      schemaName: selectedSchema.value,
+      schemaId: selectedSchema.value,
       startKey,
     });
     console.log(`[${props.mode}] Next available key:`, nextKey);
@@ -722,7 +723,7 @@ const deleteData = async () => {
         `[${props.mode}] Deleting data for schema: ${selectedSchema.value}, key: ${key}`
       );
       await invoke(command, {
-        schemaName: selectedSchema.value,
+        schemaId: selectedSchema.value,
         key,
       });
       console.log(`[${props.mode}] Data deleted successfully`);
@@ -822,7 +823,7 @@ const isNestedFieldModified = (parentKey: string, childKey: string) => {
 };
 
 const onSchemaChange = (newSchema: SchemaOption) => {
-  selectedSchema.value = newSchema.name; // Store the schema name string, not the object
+  selectedSchema.value = newSchema.name; // Store the schema id string, not the object
   loadSchema(newSchema.name);
 };
 
@@ -898,9 +899,9 @@ const getEmptyStateMessage = () => {
 
 // Watch for prop changes
 watch(
-  () => props.schemaName,
+  () => props.schemaId,
   () => {
-    const newSelectedSchema = getInitialSchemaName();
+    const newSelectedSchema = getInitialSchemaId();
     if (newSelectedSchema && newSelectedSchema !== selectedSchema.value) {
       selectedSchema.value = newSelectedSchema;
       loadSchema(newSelectedSchema);
@@ -911,7 +912,7 @@ watch(
 watch(
   () => props.availableSchemas,
   () => {
-    const newSelectedSchema = getInitialSchemaName();
+    const newSelectedSchema = getInitialSchemaId();
     if (newSelectedSchema && newSelectedSchema !== selectedSchema.value) {
       selectedSchema.value = newSelectedSchema;
       loadSchema(newSelectedSchema);
@@ -934,10 +935,10 @@ watch(
 // Initialize on mount
 onMounted(async () => {
   // Initialize selectedSchema with proper value
-  const initialSchemaName = getInitialSchemaName();
-  if (initialSchemaName) {
-    selectedSchema.value = initialSchemaName;
-    await loadSchema(initialSchemaName);
+  const initialSchemaId = getInitialSchemaId();
+  if (initialSchemaId) {
+    selectedSchema.value = initialSchemaId;
+    await loadSchema(initialSchemaId);
     // Always try to load data when schema is available
     await loadData();
   }

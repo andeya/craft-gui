@@ -96,6 +96,7 @@
               :parent-key="key"
               :check-nested-modification="props.checkNestedModification"
               :compact="compact"
+              :field-key="key"
               @update:model-value="handleNestedValueUpdate(key, $event)"
               @validation-error="handleNestedValidationError"
               @validation-success="handleNestedValidationSuccess"
@@ -147,6 +148,7 @@ interface SchemaFieldProps {
   parentKey: string;
   checkNestedModification: (parentKey: string, childKey: string) => boolean;
   compact?: boolean;
+  fieldKey?: string; // Field key in the schema object
 }
 
 const props = withDefaults(defineProps<SchemaFieldProps>(), {
@@ -155,6 +157,7 @@ const props = withDefaults(defineProps<SchemaFieldProps>(), {
   parentKey: "",
   checkNestedModification: () => false,
   compact: false,
+  fieldKey: "",
 });
 
 const emit = defineEmits<{
@@ -208,7 +211,10 @@ const isSelectInput = computed((): boolean => {
 });
 
 const isNumberInput = computed((): boolean => {
-  return resolvedSchema.value.type === "integer";
+  return (
+    resolvedSchema.value.type === "integer" ||
+    resolvedSchema.value.type === "number"
+  );
 });
 
 const isBooleanInput = computed((): boolean => {
@@ -220,7 +226,7 @@ const isThisFieldModified = computed((): boolean => {
 });
 
 const fieldDisplayName = computed((): string => {
-  return resolvedSchema.value.title || "Field";
+  return resolvedSchema.value.title || props.fieldKey || "Field";
 });
 
 const inputPlaceholder = computed((): string => {

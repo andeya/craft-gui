@@ -28,6 +28,7 @@ pub struct UserProfile {
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Entity, Default)]
 #[entity(id = "id")]
 pub struct ProductConfig {
+  /// The product ID
   pub id: u32,
   #[schemars(title = "Product Name", description = "Enter the product name")]
   pub name: String,
@@ -73,7 +74,7 @@ impl Entity for ProductConfig {
   type Key = u32;
 
   fn store_name() -> &'static str {
-    "product_config"
+    "ProductConfig"
   }
 
   fn get_key(&self) -> &Self::Key {
@@ -89,7 +90,7 @@ impl Entity for UserProfile {
   type Key = u32;
 
   fn store_name() -> &'static str {
-    "user_profile"
+    "UserProfile"
   }
 
   fn get_key(&self) -> &Self::Key {
@@ -105,7 +106,7 @@ impl Entity for SystemSettings {
   type Key = u32;
 
   fn store_name() -> &'static str {
-    "system_settings"
+    "SystemSettings"
   }
 
   fn get_key(&self) -> &Self::Key {

@@ -1,6 +1,5 @@
 use reindeer::Entity;
 use schemars::JsonSchema;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::sync::{Arc, LazyLock};
@@ -12,8 +11,8 @@ pub trait AppData: Default + Sync + Send + JsonSchema + Entity<Key = u32> + 'sta
   fn register() -> impl std::future::Future<Output = anyhow::Result<()>> + Send {
     register::<Self>()
   }
-  fn schema_name() -> Cow<'static, str> {
-    <Self as JsonSchema>::schema_name()
+  fn id() -> &'static str {
+    <Self as Entity>::store_name()
   }
   fn get_schema() -> schemars::Schema {
     schemars::schema_for!(Self)
@@ -53,7 +52,7 @@ pub trait AppData: Default + Sync + Send + JsonSchema + Entity<Key = u32> + 'sta
 impl<T: Default + Sync + Send + JsonSchema + Entity<Key = u32> + 'static> AppData for T {}
 
 pub trait AppDataDyn {
-  fn schema_name(&self) -> Cow<'static, str>;
+  fn id(&self) -> &'static str;
   fn get_schema(&self) -> schemars::Schema;
   fn get_data(&self, key: u32) -> Result<Option<Vec<u8>>, String>;
   fn save_data(&self, data: &[u8]) -> Result<(), String>;
@@ -63,8 +62,8 @@ pub trait AppDataDyn {
 }
 
 impl<T: AppData> AppDataDyn for T {
-  fn schema_name(&self) -> Cow<'static, str> {
-    <T as AppData>::schema_name()
+  fn id(&self) -> &'static str {
+    <T as AppData>::id()
   }
   fn get_schema(&self) -> schemars::Schema {
     <T as AppData>::get_schema()
@@ -100,39 +99,37 @@ static REGISTERED_APPDATA: LazyLock<RwLock<HashMap<String, Arc<dyn AppDataDyn + 
 
 pub async fn register<T: AppData>() -> anyhow::Result<()> {
   let appdata = T::default();
-  let key = appdata.schema_name();
+  let key = appdata.id();
   let old = REGISTERED_APPDATA
     .write()
     .await
     .insert(key.to_string(), Arc::new(appdata));
   if let Some(old) = old {
     return Err(anyhow::anyhow!(
-      "AppData already registered: schema_name={}, type={}, new_type={}",
+      "AppData already registered: id={}, type={}, new_type={}",
       key,
       std::any::type_name_of_val(old.as_ref()),
       std::any::type_name::<T>(),
     ));
   }
   println!(
-    "AppData registered: schema_name={}, type={}",
+    "AppData registered: id={}, type={}",
     key,
     std::any::type_name::<T>()
   );
   Ok(())
 }
 
-async fn get(schema_name: &str) -> Option<Arc<dyn AppDataDyn + Send + Sync>> {
-  REGISTERED_APPDATA.read().await.get(schema_name).cloned()
+async fn get(id: &str) -> Option<Arc<dyn AppDataDyn + Send + Sync>> {
+  REGISTERED_APPDATA.read().await.get(id).cloned()
 }
 
-async fn get_ok(schema_name: &str) -> Result<Arc<dyn AppDataDyn + Send + Sync>, String> {
-  get(schema_name)
-    .await
-    .ok_or(format!("AppData not found: {}", schema_name))
+async fn get_ok(id: &str) -> Result<Arc<dyn AppDataDyn + Send + Sync>, String> {
+  get(id).await.ok_or(format!("AppData not found: {}", id))
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_schema_names() -> Result<Vec<String>, String> {
+pub async fn appdata_cmd_schema_ids() -> Result<Vec<String>, String> {
   let mut keys = REGISTERED_APPDATA
     .read()
     .await
@@ -146,53 +143,53 @@ pub async fn appdata_cmd_schema_names() -> Result<Vec<String>, String> {
 #[tauri::command]
 pub async fn appdata_cmd_schemas() -> Result<Vec<schemars::Schema>, String> {
   let mut schemas = Vec::new();
-  for key in appdata_cmd_schema_names().await? {
+  for key in appdata_cmd_schema_ids().await? {
     schemas.push(get_ok(&key).await?.get_schema());
   }
   Ok(schemas)
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_get_schema(schema_name: &str) -> Result<schemars::Schema, String> {
-  get_ok(schema_name)
+pub async fn appdata_cmd_get_schema(schema_id: &str) -> Result<schemars::Schema, String> {
+  get_ok(schema_id)
     .await
     .and_then(|appdata| Ok(appdata.get_schema()))
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_get_data(schema_name: &str, key: u32) -> Result<Option<Vec<u8>>, String> {
-  get_ok(schema_name)
+pub async fn appdata_cmd_get_data(schema_id: &str, key: u32) -> Result<Option<Vec<u8>>, String> {
+  get_ok(schema_id)
     .await
     .and_then(|appdata| appdata.get_data(key))
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_save_data(schema_name: &str, data: Vec<u8>) -> Result<(), String> {
-  get_ok(schema_name)
+pub async fn appdata_cmd_save_data(schema_id: &str, data: Vec<u8>) -> Result<(), String> {
+  get_ok(schema_id)
     .await
     .and_then(|appdata| appdata.save_data(&data))
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_remove_data(schema_name: &str, key: u32) -> Result<(), String> {
-  get_ok(schema_name)
+pub async fn appdata_cmd_remove_data(schema_id: &str, key: u32) -> Result<(), String> {
+  get_ok(schema_id)
     .await
     .and_then(|appdata| appdata.remove_data(key))
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_exists_data(schema_name: &str, key: u32) -> Result<bool, String> {
-  get_ok(schema_name)
+pub async fn appdata_cmd_exists_data(schema_id: &str, key: u32) -> Result<bool, String> {
+  get_ok(schema_id)
     .await
     .and_then(|appdata| appdata.exists_data(key))
 }
 
 #[tauri::command]
 pub async fn appdata_cmd_find_next_available_key(
-  schema_name: &str,
+  schema_id: &str,
   start_key: u32,
 ) -> Result<u32, String> {
-  get_ok(schema_name)
+  get_ok(schema_id)
     .await
     .and_then(|appdata| appdata.find_next_available_key(start_key))
 }

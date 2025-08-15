@@ -18,7 +18,7 @@ export const UI_MESSAGES = {
 
   // Common messages
   COMMON: {
-    SCHEMA_NAME_REQUIRED: "Schema name is required",
+    SCHEMA_ID_REQUIRED: "Schema id is required",
     CANNOT_LOAD_DATA: "Cannot load data: missing schema or key",
     SAVE_CONFIRMATION: "Are you sure you want to save the current data?",
     DELETE_CONFIRMATION:

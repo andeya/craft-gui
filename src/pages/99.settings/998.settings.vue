@@ -3,7 +3,7 @@
     <div class="settings-container">
       <SchemaDataForm
         mode="config"
-        :schema-name="schemaName"
+        :schema-id="schemaId"
         :show-diff-before-save="'toml'"
         :show-modified-indicators="true"
         :compact="true"
@@ -20,12 +20,12 @@ import { useQuasar } from "quasar";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 
 const $q = useQuasar();
-const schemaName = ref("AppConfig");
+const schemaId = ref("AppConfig");
 
-// Initialize schema name on mount
+// Initialize schema id on mount
 onMounted(() => {
-  // Use fixed schema name for config
-  schemaName.value = "AppConfig";
+  // Use fixed schema id for config
+  schemaId.value = "AppConfig";
 });
 
 const handleSave = (data: any) => {

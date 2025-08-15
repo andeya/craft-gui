@@ -21,7 +21,7 @@ pub fn run() {
     })
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
-      appdata::appdata_cmd_schema_names,
+      appdata::appdata_cmd_schema_ids,
       appdata::appdata_cmd_schemas,
       appdata::appdata_cmd_get_schema,
       appdata::appdata_cmd_get_data,

@@ -126,7 +126,7 @@
             <!-- SchemaApiForm Component -->
             <div v-if="selectedApiSchema">
               <SchemaApiForm
-                :schema-name="selectedApiSchema"
+                :schema-id="selectedApiSchema"
                 :initial-data="apiFormInitialData"
                 :submit-button-text="apiSubmitButtonText"
                 :submit-button-icon="apiSubmitButtonIcon"
@@ -379,8 +379,8 @@ const handleReset = (data: any) => {
   addEventLog(`🔄 Form reset to: ${JSON.stringify(data, null, 2)}`);
 };
 
-const handleSchemaChange = (schemaName: string) => {
-  addEventLog(`📋 Schema changed to: ${schemaName}`);
+const handleSchemaChange = (schemaId: string) => {
+  addEventLog(`📋 Schema changed to: ${schemaId}`);
 };
 
 const handleKeyChange = (key: number) => {
@@ -392,8 +392,8 @@ const handleDataFormColumnsChange = (value: number) => {
 };
 
 // SchemaApiForm event handlers
-const handleApiSchemaChange = (schemaName: string) => {
-  addEventLog(`📋 API Form schema changed to: ${schemaName}`);
+const handleApiSchemaChange = (schemaId: string) => {
+  addEventLog(`📋 API Form schema changed to: ${schemaId}`);
 };
 
 const resetApiForm = () => {
