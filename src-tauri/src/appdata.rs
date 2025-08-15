@@ -148,10 +148,10 @@ pub async fn appdata_cmd_get_data(schema_name: &str, key: u32) -> Result<Option<
 }
 
 #[tauri::command]
-pub async fn appdata_cmd_save_data(schema_name: &str, data: &[u8]) -> Result<(), String> {
+pub async fn appdata_cmd_save_data(schema_name: &str, data: Vec<u8>) -> Result<(), String> {
   get_ok(schema_name)
     .await
-    .and_then(|appdata| appdata.save_data(data))
+    .and_then(|appdata| appdata.save_data(&data))
 }
 
 #[tauri::command]
