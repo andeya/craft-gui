@@ -174,55 +174,12 @@ import { invoke } from "@tauri-apps/api/core";
 import SchemaField from "./SchemaField.vue";
 import type { AppSchema } from "../../types/schema";
 import { TAURI_COMMANDS } from "../../utils/tauri-commands";
-
-// Type definitions
-type FormData = Record<string, any>;
-type ValidationErrors = Map<string, string>;
-
-interface SchemaApiFormProps {
-  // Core form properties
-  schemaId: string;
-  modelValue?: FormData;
-  initialData?: FormData;
-
-  // Form state
-  disabled?: boolean;
-  loading?: boolean;
-  readonly?: boolean;
-
-  // Layout and display
-  columns?: number; // 0=auto, 1=single column, 2=double column, 3=triple column
-  compact?: boolean;
-  showHeader?: boolean;
-
-  // Button configuration
-  showSubmitButton?: boolean;
-  showCancelButton?: boolean;
-  submitButtonText?: string;
-  submitButtonIcon?: string;
-  cancelButtonText?: string;
-  cancelButtonIcon?: string;
-
-  // Form styling
-  labelWidth?: string;
-  labelPosition?: "left" | "top" | "right";
-  size?: "small" | "medium" | "large";
-}
-
-interface SchemaApiFormEmits {
-  // Standard form events
-  (e: "update:model-value", data: FormData): void;
-  (e: "submit", data: FormData): void;
-  (e: "cancel"): void;
-
-  // Validation events
-  (e: "validation-error", errors: ValidationErrors): void;
-  (e: "validation-success"): void;
-
-  // Schema events
-  (e: "schema-loaded", schema: AppSchema): void;
-  (e: "schema-error", error: string): void;
-}
+import type {
+  FormData,
+  ValidationErrors,
+  SchemaApiFormProps,
+  SchemaApiFormEmits,
+} from "./types";
 
 const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   modelValue: () => ({}),

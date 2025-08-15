@@ -128,28 +128,12 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { AppSchema } from "../../types/schema";
-
-// Type definitions for better type safety
-type FieldValue =
-  | string
-  | number
-  | boolean
-  | unknown[]
-  | Record<string, any>
-  | null
-  | undefined;
-type ValidationRule = (val: any) => boolean | string;
-
-interface SchemaFieldProps {
-  schema: AppSchema;
-  modelValue: FieldValue;
-  rootSchema: AppSchema | null;
-  isModified: boolean;
-  parentKey: string;
-  checkNestedModification: (parentKey: string, childKey: string) => boolean;
-  compact?: boolean;
-  fieldKey?: string; // Field key in the schema object
-}
+import type {
+  FieldValue,
+  ValidationRule,
+  SchemaFieldProps,
+  SchemaFieldEmits,
+} from "./types";
 
 const props = withDefaults(defineProps<SchemaFieldProps>(), {
   rootSchema: null,
@@ -160,11 +144,7 @@ const props = withDefaults(defineProps<SchemaFieldProps>(), {
   fieldKey: "",
 });
 
-const emit = defineEmits<{
-  "update:model-value": [value: FieldValue];
-  "validation-error": [error: string];
-  "validation-success": [];
-}>();
+const emit = defineEmits<SchemaFieldEmits>();
 
 // Internal state
 const internalValue = ref<FieldValue>(props.modelValue);
