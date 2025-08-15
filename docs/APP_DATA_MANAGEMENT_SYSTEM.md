@@ -17,7 +17,7 @@ The system consists of three main layers:
 ### Data Flow
 
 ```
-User Interface (SchemaForm)
+User Interface (SchemaDataForm)
     ↓
 Tauri Commands (invoke)
     ↓
@@ -63,12 +63,12 @@ The system supports two distinct modes:
 
 ## Component Architecture
 
-### SchemaForm Component
+### SchemaDataForm Component
 
 The main form component that provides:
 
 ```typescript
-interface SchemaFormProps {
+interface SchemaDataFormProps {
   // Schema and data
   schemaName?: string;
   dataKey?: number;
@@ -182,7 +182,7 @@ const userProfileSchema = {
 
 ```vue
 <template>
-  <SchemaForm
+  <SchemaDataForm
     mode="appdata"
     schema-name="UserProfile"
     :data-key="1"
@@ -198,7 +198,7 @@ const userProfileSchema = {
 
 ```vue
 <template>
-  <SchemaForm
+  <SchemaDataForm
     mode="config"
     schema-name="AppConfig"
     title="Application Settings"
@@ -212,7 +212,7 @@ const userProfileSchema = {
 
 ```vue
 <template>
-  <SchemaForm
+  <SchemaDataForm
     mode="appdata"
     :available-schemas="availableSchemas"
     :data-key="currentKey"
@@ -278,7 +278,7 @@ const availableSchemas = [
 
 1. **Define Schema**: Create JSON Schema definition
 2. **Register Schema**: Add schema to backend registration
-3. **Create UI**: Use SchemaForm component with new schema
+3. **Create UI**: Use SchemaDataForm component with new schema
 4. **Test**: Validate schema and UI functionality
 
 ### Extending Functionality

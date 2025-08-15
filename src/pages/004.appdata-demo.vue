@@ -17,7 +17,7 @@
 
       <!-- AppData Form -->
       <div class="col-12">
-        <SchemaForm
+        <SchemaDataForm
           title="Dynamic Data Form"
           description="Select a schema and data key to start editing"
           :available-schemas="availableSchemas"
@@ -123,7 +123,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useQuasar } from "quasar";
-import SchemaForm from "@/components/schemaform/SchemaForm.vue";
+import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
 
 const $q = useQuasar();

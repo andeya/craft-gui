@@ -7,7 +7,7 @@
           <div class="row items-center justify-between q-col-gutter-sm">
             <div class="col-grow">
               <h3 class="text-lg font-semibold q-mb-xs">
-                {{ schema?.title || title || "SchemaForm Form" }}
+                {{ schema?.title || title || "SchemaDataForm Form" }}
               </h3>
               <p
                 v-if="schema?.description || description"
@@ -231,6 +231,8 @@ import SchemaField from "@/components/schemaform/SchemaField.vue";
 import TextDiffDialog from "@/components/TextDiffDialog.vue";
 import type { AppSchema } from "@/types/schema";
 import { TAURI_COMMANDS } from "@/utils/tauri-commands";
+import TOML from "smol-toml";
+
 import {
   getDialogTitle,
   getCommonMessage,
@@ -269,9 +271,8 @@ interface Props {
   // Schema and data
   availableSchemas?: SchemaOption[];
 
-  // Mode configuration
   mode?: "appdata" | "config";
-  showDiffBeforeSave?: boolean;
+  showDiffBeforeSave?: "json" | "toml" | ((obj: object) => string);
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -287,7 +288,7 @@ const props = withDefaults(defineProps<Props>(), {
   showReloadButton: true,
   availableSchemas: () => [],
   mode: "appdata",
-  showDiffBeforeSave: false,
+  showDiffBeforeSave: undefined,
 });
 
 const emit = defineEmits([
@@ -491,7 +492,7 @@ const loadData = async (showDialog = false) => {
       const data = JSON.parse(
         new TextDecoder().decode(new Uint8Array(dataBytes))
       );
-      console.log(`[SchemaForm] Data decoded:`, data);
+      console.log(`[SchemaDataForm] Data decoded:`, data);
 
       // Schema validation is now handled by the backend
 
@@ -501,7 +502,9 @@ const loadData = async (showDialog = false) => {
       isNewMode.value = false; // Exit new mode when loading existing data
       emit("load", data);
     } else {
-      console.log(`[SchemaForm] No data found, setting dataExists to false`);
+      console.log(
+        `[SchemaDataForm] No data found, setting dataExists to false`
+      );
       // Ensure schema is loaded for form structure
       if (!schema.value) {
         await loadSchema(selectedSchema.value, showDialog);
@@ -514,7 +517,7 @@ const loadData = async (showDialog = false) => {
       emit("load", null);
     }
     console.log(
-      `[SchemaForm] Data loaded, dataExists: ${
+      `[SchemaDataForm] Data loaded, dataExists: ${
         dataExists.value
       }, schema: ${JSON.stringify(schema.value)}`
     );
@@ -534,6 +537,16 @@ const loadData = async (showDialog = false) => {
   }
 };
 
+const diffStringify = (obj: object) => {
+  if (props.showDiffBeforeSave === "json") {
+    return JSON.stringify(obj, null, 2);
+  }
+  if (props.showDiffBeforeSave === "toml") {
+    return TOML.stringify(obj);
+  }
+  return props.showDiffBeforeSave!(obj);
+};
+
 const saveData = async () => {
   if (!canSave.value) return;
 
@@ -544,8 +557,8 @@ const saveData = async () => {
     $q.dialog({
       title: getDialogTitle("SAVE_DATA"),
       component: h(TextDiffDialog, {
-        currentText: JSON.stringify(formData.value, null, 2),
-        originalText: JSON.stringify(originalData.value, null, 2),
+        currentText: diffStringify(formData.value),
+        originalText: diffStringify(originalData.value),
         subtitle: "Review the differences between current and original data",
         confirmButtonLabel: UI_MESSAGES.FORM.SAVE,
         cancelButtonColor: "secondary",

@@ -128,7 +128,7 @@ The system consists of three main layers:
 ```vue
 <template>
   <!-- AppData Mode - Multiple Records -->
-  <SchemaForm
+  <SchemaDataForm
     mode="appdata"
     schema-name="UserProfile"
     :data-key="1"
@@ -137,7 +137,7 @@ The system consists of three main layers:
   />
 
   <!-- Config Mode - Application Settings -->
-  <SchemaForm
+  <SchemaDataForm
     mode="config"
     schema-name="AppConfig"
     title="Application Settings"
@@ -182,7 +182,7 @@ craft-gui/
 ├── src/
 │   ├── components/
 │   │   ├── schemaform/           # Schema-based form components
-│   │   │   ├── SchemaForm.vue    # Main form component
+│   │   │   ├── SchemaDataForm.vue    # Main form component
 │   │   │   └── SchemaField.vue   # Individual field renderer
 │   │   └── ...
 │   ├── pages/

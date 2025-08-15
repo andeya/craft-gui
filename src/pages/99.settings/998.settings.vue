@@ -1,10 +1,10 @@
 <template>
   <QPage class="settings-page q-pa-lg">
     <div class="settings-container">
-      <SchemaForm
+      <SchemaDataForm
         mode="config"
         :schema-name="schemaName"
-        :show-diff-before-save="true"
+        :show-diff-before-save="'toml'"
         :show-modified-indicators="true"
         :compact="true"
         @save="handleSave"
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useQuasar } from "quasar";
-import SchemaForm from "@/components/schemaform/SchemaForm.vue";
+import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 
 const $q = useQuasar();
 const schemaName = ref("AppConfig");
