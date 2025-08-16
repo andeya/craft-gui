@@ -77,7 +77,7 @@
                     v-if="shouldShowNewButton"
                     icon="add"
                     color="grey-6"
-                    :disabled="!canCreate"
+                    :disabled="!canCreate || loading"
                     @click="createNew"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.NEW }}</QTooltip>
@@ -86,7 +86,7 @@
                     v-if="shouldShowReloadButton"
                     icon="refresh"
                     color="info"
-                    :disabled="!canLoad"
+                    :disabled="!canLoad || loading"
                     @click="reloadData"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.RELOAD }}</QTooltip>
@@ -95,7 +95,7 @@
                     v-if="shouldShowSaveButton"
                     icon="save"
                     color="primary"
-                    :disabled="!canSave"
+                    :disabled="!canSave || loading"
                     @click="saveData"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.SAVE }}</QTooltip>
@@ -104,7 +104,7 @@
                     v-if="shouldShowDeleteButton"
                     icon="delete"
                     color="grey-6"
-                    :disabled="!canDelete"
+                    :disabled="!canDelete || loading"
                     @click="deleteData"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.DELETE }}</QTooltip>
@@ -750,6 +750,9 @@ const performSave = async () => {
 const createNew = async () => {
   if (!canCreate.value) return;
 
+  loading.value = true;
+  error.value = "";
+
   try {
     // Find the next available key starting from current key
     const startKey = props.mode === "config" ? 0 : currentDataKey.value;
@@ -793,6 +796,8 @@ const createNew = async () => {
       `${getErrorMessage("FAILED_TO_PREPARE_NEW_DATA")}: ${err}`
     );
     console.error("Data creation preparation error:", err);
+  } finally {
+    loading.value = false;
   }
 };
 

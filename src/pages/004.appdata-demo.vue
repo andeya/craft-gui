@@ -406,11 +406,18 @@ const resetApiForm = () => {
   addEventLog(`🔄 API Form reset`);
 };
 
-const handleApiSubmit = (data: Record<string, any>) => {
+const handleApiSubmit = (
+  data: Record<string, any>,
+  callback?: (success: boolean, message?: string) => void
+) => {
   addEventLog(`🚀 API Form submitted: ${JSON.stringify(data, null, 2)}`);
   // Simulate API call delay
   setTimeout(() => {
     addEventLog(`✅ API call completed successfully`);
+    // Call the callback to reset the submitting state
+    if (callback) {
+      callback(true, "API call completed successfully");
+    }
   }, 1000);
 };
 

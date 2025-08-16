@@ -60,7 +60,7 @@
       </div>
 
       <!-- Form Fields -->
-      <QForm @submit="handleSubmit" class="form-fields">
+      <QForm class="form-fields">
         <QCard class="form-fields-card">
           <QCardSection class="q-pa-md">
             <div
@@ -511,18 +511,29 @@ const validateForm = (): boolean => {
 };
 
 const handleSubmit = async (): Promise<void> => {
+  // Validate form first
   if (!validateForm()) {
     return;
   }
 
+  // Set submitting state
   submitting.value = true;
 
   try {
     console.log("[SchemaApiForm] Submitting form data:");
     console.log(JSON.stringify(formData.value, null, 2));
 
+    // Set a timeout to reset submitting state if callback is not called
+    const timeoutId = setTimeout(() => {
+      console.warn(
+        "[SchemaApiForm] Submit callback not called within timeout, resetting submitting state"
+      );
+      submitting.value = false;
+    }, 10000); // 10 second timeout
+
     // Emit submit event with callback for result
     emit("submit", formData.value, (success: boolean, message?: string) => {
+      clearTimeout(timeoutId); // Clear the timeout
       if (success && props.showSuccessNotification) {
         showNotification("positive", message || "Form submitted successfully");
       } else if (!success && message) {
