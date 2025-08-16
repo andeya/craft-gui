@@ -54,6 +54,11 @@
               :available-schemas="availableSchemas"
               :auto-load="false"
               :columns="dataFormColumns"
+              :field-layout-config="[
+                { fieldKey: undefined, columns: 3 }, // First level fields in 3 columns
+                { fieldKey: 'complexField', columns: 3, span: 2 }, // Complex field sub-fields in 3 columns, spans 2 columns
+                { fieldKey: 'simpleField', columns: 1, span: 1 }, // Simple field sub-fields in 1 column, spans 1 column
+              ]"
               @save="handleSave"
               @load="handleLoad"
               @delete="handleDelete"
@@ -312,7 +317,6 @@ import { useQuasar } from "quasar";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 import SchemaApiForm from "@/components/schemaform/SchemaApiForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
-import type { FormData } from "@/components/schemaform/types";
 
 const $q = useQuasar();
 
@@ -402,14 +406,11 @@ const resetApiForm = () => {
   addEventLog(`🔄 API Form reset`);
 };
 
-const handleApiSubmit = (
-  formData: FormData,
-  callback?: (success: boolean, message?: string) => void
-) => {
-  addEventLog(`🚀 API Form submitted: ${JSON.stringify(formData, null, 2)}`);
+const handleApiSubmit = (data: Record<string, any>) => {
+  addEventLog(`🚀 API Form submitted: ${JSON.stringify(data, null, 2)}`);
   // Simulate API call delay
   setTimeout(() => {
-    callback?.(true, `✅ API call completed successfully`);
+    addEventLog(`✅ API call completed successfully`);
   }, 1000);
 };
 

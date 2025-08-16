@@ -15,6 +15,13 @@ export type ValidationRule = (val: any) => boolean | string;
 export type FormData = Record<string, any>;
 export type ValidationErrors = Map<string, string>;
 
+// Field layout configuration
+export interface FieldLayoutConfig {
+  fieldKey?: string; // null means first level fields
+  columns: number; // Number of columns for sub-fields of this field
+  span?: number; // Number of columns this field spans in the grid (optional)
+}
+
 // SchemaField component types
 export interface SchemaFieldProps {
   schema: AppSchema;
@@ -25,6 +32,7 @@ export interface SchemaFieldProps {
   checkNestedModification: (parentKey: string, childKey: string) => boolean;
   compact?: boolean;
   fieldKey?: string; // Field key in the schema object
+  columns?: number; // Number of columns for nested fields
 }
 
 export interface SchemaFieldEmits {
@@ -71,6 +79,9 @@ export interface SchemaApiFormProps {
 
   // Modification tracking
   showModificationIndicator?: boolean;
+
+  // Field layout configuration
+  fieldLayoutConfig?: FieldLayoutConfig[];
 }
 
 export interface SchemaApiFormEmits {
@@ -110,6 +121,9 @@ export interface SchemaDataFormProps {
   showDeleteButton?: boolean;
   title?: string;
   description?: string;
+
+  // Field layout configuration
+  fieldLayoutConfig?: FieldLayoutConfig[];
 }
 
 export interface SchemaDataFormEmits {

@@ -63,32 +63,48 @@
       <QForm @submit="handleSubmit" class="form-fields">
         <QCard class="form-fields-card">
           <QCardSection class="q-pa-md">
-            <div class="fields-container" :class="`columns-${columns}`">
+            <div
+              class="fields-container"
+              :class="`columns-${getRootColumnsLocal()}`"
+            >
               <!-- Render form fields based on schema traversal -->
               <template v-if="schema">
-                <SchemaField
+                <div
                   v-for="fieldInfo in schemaFieldInfos"
                   :key="fieldInfo.key"
-                  :schema="fieldInfo.schema"
-                  :root-schema="schema"
-                  :model-value="fieldInfo.value"
-                  :is-modified="
-                    props.showModificationIndicator
-                      ? isFieldModified(fieldInfo.key)
-                      : false
-                  "
-                  :parent-key="fieldInfo.key"
-                  :check-nested-modification="
-                    props.showModificationIndicator
-                      ? isNestedFieldModified
-                      : () => false
-                  "
-                  :compact="compactMode"
-                  :field-key="fieldInfo.key"
-                  @update:model-value="handleFieldUpdate(fieldInfo.key, $event)"
-                  @validation-error="handleValidationError"
-                  @validation-success="handleValidationSuccess"
-                />
+                  :class="[
+                    `field-span-${getFieldSpanLocal(fieldInfo.key)}`,
+                    fieldInfo.schema.type === 'object' &&
+                    fieldInfo.schema.properties
+                      ? 'field-object'
+                      : 'field-simple',
+                  ]"
+                >
+                  <SchemaField
+                    :schema="fieldInfo.schema"
+                    :root-schema="schema"
+                    :model-value="fieldInfo.value"
+                    :is-modified="
+                      props.showModificationIndicator
+                        ? isFieldModified(fieldInfo.key)
+                        : false
+                    "
+                    :parent-key="fieldInfo.key"
+                    :check-nested-modification="
+                      props.showModificationIndicator
+                        ? isNestedFieldModified
+                        : () => false
+                    "
+                    :compact="compactMode"
+                    :field-key="fieldInfo.key"
+                    :columns="getFieldColumnsLocal(fieldInfo.key)"
+                    @update:model-value="
+                      handleFieldUpdate(fieldInfo.key, $event)
+                    "
+                    @validation-error="handleValidationError"
+                    @validation-success="handleValidationSuccess"
+                  />
+                </div>
               </template>
 
               <!-- No properties message -->
@@ -194,12 +210,20 @@ import type {
   ValidationErrors,
   SchemaApiFormProps,
   SchemaApiFormEmits,
+  FieldLayoutConfig,
 } from "./types";
 import {
   initializeSchemaData,
   validateSchemaData,
   resolveSchemaRef,
 } from "../../utils/schema-utils";
+import {
+  getFieldLayout,
+  getRootLayout,
+  getFieldColumns,
+  getFieldSpan,
+  getRootColumns,
+} from "./layout-utils";
 
 // Constants
 const MAX_DEPTH = 10;
@@ -229,6 +253,7 @@ const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   showSuccessNotification: true,
   maxHeight: "70vh", // Maximum height for the form container
   showModificationIndicator: false, // Show modification indicators
+  fieldLayoutConfig: () => [], // Field layout configuration
 });
 
 const emit = defineEmits<SchemaApiFormEmits>();
@@ -279,6 +304,17 @@ const schemaFieldInfos = computed(() => {
 
   return fieldInfos;
 });
+
+// Layout utility functions using shared implementation
+const getFieldLayoutLocal = (fieldKey: string) =>
+  getFieldLayout(fieldKey, props.fieldLayoutConfig);
+const getRootLayoutLocal = () => getRootLayout(props.fieldLayoutConfig);
+const getFieldColumnsLocal = (fieldKey: string) =>
+  getFieldColumns(fieldKey, props.fieldLayoutConfig, props.columns);
+const getFieldSpanLocal = (fieldKey: string) =>
+  getFieldSpan(fieldKey, props.fieldLayoutConfig);
+const getRootColumnsLocal = () =>
+  getRootColumns(props.fieldLayoutConfig, props.columns);
 
 const getInvokeCommand = (command: string): string => {
   switch (command) {
@@ -716,12 +752,40 @@ defineExpose({
   grid-template-columns: repeat(3, 1fr);
 }
 
+/* Field span classes for layout control */
+.field-span-1 {
+  grid-column: span 1;
+}
+.field-span-2 {
+  grid-column: span 2;
+}
+.field-span-3 {
+  grid-column: span 3;
+}
+
+.field-object {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #fafafa;
+}
+
+.field-simple {
+  padding: 4px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .fields-container.columns-0,
   .fields-container.columns-2,
   .fields-container.columns-3 {
     grid-template-columns: 1fr;
+  }
+
+  .field-span-1,
+  .field-span-2,
+  .field-span-3 {
+    grid-column: span 1;
   }
 }
 

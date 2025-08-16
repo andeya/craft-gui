@@ -84,25 +84,30 @@
       <div v-if="isObjectType" class="object-container">
         <div v-if="resolvedSchema.properties" class="q-ml-md q-mt-sm">
           <div
-            v-for="fieldInfo in objectFieldInfos"
-            :key="fieldInfo.key"
-            class="q-mb-md"
+            class="object-fields-container"
+            :class="`columns-${props.columns}`"
           >
-            <SchemaField
-              :schema="fieldInfo.schema"
-              :root-schema="props.rootSchema"
-              :model-value="fieldInfo.value"
-              :is-modified="isNestedFieldModified(fieldInfo.key)"
-              :parent-key="fieldInfo.key"
-              :check-nested-modification="props.checkNestedModification"
-              :compact="compact"
-              :field-key="fieldInfo.key"
-              @update:model-value="
-                handleNestedValueUpdate(fieldInfo.key, $event)
-              "
-              @validation-error="handleNestedValidationError"
-              @validation-success="handleNestedValidationSuccess"
-            />
+            <div
+              v-for="fieldInfo in objectFieldInfos"
+              :key="fieldInfo.key"
+              class="object-field-item"
+            >
+              <SchemaField
+                :schema="fieldInfo.schema"
+                :root-schema="props.rootSchema"
+                :model-value="fieldInfo.value"
+                :is-modified="isNestedFieldModified(fieldInfo.key)"
+                :parent-key="fieldInfo.key"
+                :check-nested-modification="props.checkNestedModification"
+                :compact="compact"
+                :field-key="fieldInfo.key"
+                @update:model-value="
+                  handleNestedValueUpdate(fieldInfo.key, $event)
+                "
+                @validation-error="handleNestedValidationError"
+                @validation-success="handleNestedValidationSuccess"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -149,6 +154,7 @@ const props = withDefaults(defineProps<SchemaFieldProps>(), {
   checkNestedModification: () => false,
   compact: false,
   fieldKey: "",
+  columns: 1,
 });
 
 const emit = defineEmits<SchemaFieldEmits>();
@@ -583,6 +589,36 @@ const handleSubmit = (): void => {
 
 .object-container {
   position: relative;
+}
+
+.object-fields-container {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.object-fields-container.columns-1 {
+  grid-template-columns: 1fr;
+}
+
+.object-fields-container.columns-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.object-fields-container.columns-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.object-field-item {
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive adjustments for object fields */
+@media (max-width: 768px) {
+  .object-fields-container.columns-2,
+  .object-fields-container.columns-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .array-container {

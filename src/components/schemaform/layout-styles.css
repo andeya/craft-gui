@@ -1,0 +1,115 @@
+/* ===== Shared Field Layout Styles ===== */
+
+/* Fields container layout */
+.fields-container {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.fields-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.fields-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fields-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.fields-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Column configurations */
+.fields-container.columns-0 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.fields-container.columns-1 {
+  grid-template-columns: 1fr;
+}
+
+.fields-container.columns-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.fields-container.columns-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Field span classes for layout control */
+.field-span-1 {
+  grid-column: span 1;
+}
+
+.field-span-2 {
+  grid-column: span 2;
+}
+
+.field-span-3 {
+  grid-column: span 3;
+}
+
+/* Field type styling */
+.field-object {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #fafafa;
+}
+
+.field-simple {
+  padding: 4px;
+}
+
+/* Object fields container for nested fields */
+.object-fields-container {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.object-fields-container.columns-1 {
+  grid-template-columns: 1fr;
+}
+
+.object-fields-container.columns-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.object-fields-container.columns-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.object-field-item {
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .fields-container.columns-0,
+  .fields-container.columns-2,
+  .fields-container.columns-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .field-span-1,
+  .field-span-2,
+  .field-span-3 {
+    grid-column: span 1;
+  }
+
+  .object-fields-container.columns-2,
+  .object-fields-container.columns-3 {
+    grid-template-columns: 1fr;
+  }
+}
