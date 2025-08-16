@@ -443,10 +443,8 @@ const handleSubmit = async (): Promise<void> => {
   submitting.value = true;
 
   try {
-    console.log(
-      "[SchemaApiForm] Submitting form data:",
-      JSON.stringify(formData.value, null, 2)
-    );
+    console.log("[SchemaApiForm] Submitting form data:");
+    console.log(JSON.stringify(formData.value, null, 2));
 
     // Emit submit event with callback for result
     emit("submit", formData.value, (success: boolean, message?: string) => {
