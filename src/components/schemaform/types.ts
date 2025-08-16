@@ -39,6 +39,7 @@ export interface SchemaFieldEmits {
   "update:model-value": [value: FieldValue];
   "validation-error": [error: string];
   "validation-success": [];
+  validate: [result: { valid: boolean; error?: string }]; // 触发校验并返回结果
 }
 
 // SchemaApiForm component types
@@ -58,13 +59,18 @@ export interface SchemaApiFormProps {
   compact?: boolean;
   showHeader?: boolean;
 
-  // Button configuration
+  // Action buttons configuration
   showSubmitButton?: boolean;
-  showCancelButton?: boolean;
+  showResetButton?: boolean; // Reset form to initial state
+  showClearButton?: boolean; // Clear all form data
+
+  // Button labels and icons
   submitButtonText?: string;
   submitButtonIcon?: string;
-  cancelButtonText?: string;
-  cancelButtonIcon?: string;
+  resetButtonText?: string;
+  resetButtonIcon?: string;
+  clearButtonText?: string;
+  clearButtonIcon?: string;
 
   // Form styling
   labelWidth?: string;
@@ -73,6 +79,8 @@ export interface SchemaApiFormProps {
 
   // Notification control
   showSuccessNotification?: boolean;
+  showResetConfirmation?: boolean; // Show confirmation dialog for reset
+  showClearConfirmation?: boolean; // Show confirmation dialog for clear
 
   // Container styling
   maxHeight?: string;
@@ -91,7 +99,8 @@ export interface SchemaApiFormEmits {
     data: FormData,
     callback: (success: boolean, message?: string) => void
   ];
-  cancel: [];
+  reset: [originalData: FormData]; // Emitted when form is reset to initial state
+  clear: []; // Emitted when form is cleared
 
   // Validation events
   "validation-error": [errors: ValidationErrors];

@@ -60,7 +60,7 @@
       </div>
 
       <!-- Form Fields -->
-      <QForm class="form-fields">
+      <QForm ref="formRef" class="form-fields" @submit="handleSubmit">
         <QCard class="form-fields-card">
           <QCardSection class="q-pa-md">
             <div
@@ -103,6 +103,11 @@
                     "
                     @validation-error="handleValidationError"
                     @validation-success="handleValidationSuccess"
+                    :ref="
+                      (el) => {
+                        if (el) fieldRefs[fieldInfo.key] = el;
+                      }
+                    "
                   />
                 </div>
               </template>
@@ -122,16 +127,28 @@
           <!-- Form Actions -->
           <QCardActions class="q-pa-md q-pt-none">
             <div class="row full-width justify-end q-col-gutter-sm">
-              <!-- Cancel Button -->
+              <!-- Clear Button -->
               <QBtn
-                v-if="showCancelButton"
-                :label="cancelButtonText"
-                :icon="cancelButtonIcon"
+                v-if="showClearButton"
+                :label="clearButtonText"
+                :icon="clearButtonIcon"
                 color="grey-6"
                 flat
                 :loading="submitting"
                 :disabled="disabled"
-                @click="handleCancel"
+                @click="handleClear"
+              />
+
+              <!-- Reset Button -->
+              <QBtn
+                v-if="showResetButton"
+                :label="resetButtonText"
+                :icon="resetButtonIcon"
+                color="orange"
+                flat
+                :loading="submitting"
+                :disabled="disabled"
+                @click="handleReset"
               />
 
               <!-- Submit Button -->
@@ -142,45 +159,12 @@
                 color="primary"
                 :loading="submitting"
                 :disabled="!canSubmit || disabled"
-                @click="handleSubmit"
+                type="submit"
               />
             </div>
           </QCardActions>
         </QCard>
       </QForm>
-
-      <!-- Validation Errors Summary -->
-      <div v-if="validationErrors.size > 0" class="validation-summary q-mt-md">
-        <QCard class="validation-card">
-          <QCardSection class="q-pa-md">
-            <div class="row items-start q-col-gutter-sm">
-              <QIcon
-                name="warning"
-                color="warning"
-                size="1.5em"
-                class="q-mt-xs"
-              />
-              <div class="col">
-                <div class="text-h6 text-warning">Validation Errors</div>
-                <div class="text-body2">
-                  Please fix the following errors before submitting:
-                </div>
-                <div class="validation-errors-list q-mt-sm">
-                  <ul class="q-mb-none">
-                    <li
-                      v-for="(error, field) in validationErrors"
-                      :key="field"
-                      class="text-body2"
-                    >
-                      <strong>{{ field }}:</strong> {{ error }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </QCardSection>
-        </QCard>
-      </div>
     </div>
 
     <!-- No Schema State -->
@@ -207,14 +191,12 @@ import type { AppSchema } from "../../types/schema";
 import { TAURI_COMMANDS } from "../../utils/tauri-commands";
 import type {
   FormData,
-  ValidationErrors,
   SchemaApiFormProps,
   SchemaApiFormEmits,
   // FieldLayoutConfig,
 } from "./types";
 import {
   initializeSchemaData,
-  validateSchemaData,
   resolveSchemaRef,
 } from "../../utils/schema-utils";
 import {
@@ -244,11 +226,14 @@ const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   compact: false,
   showHeader: true,
   showSubmitButton: true,
-  showCancelButton: true,
+  showResetButton: false,
+  showClearButton: false,
   submitButtonText: "Submit",
   submitButtonIcon: "send",
-  cancelButtonText: "Cancel",
-  cancelButtonIcon: "close",
+  resetButtonText: "Reset",
+  resetButtonIcon: "refresh",
+  clearButtonText: "Clear",
+  clearButtonIcon: "clear_all",
   labelWidth: "120px",
   labelPosition: "left",
   size: "medium",
@@ -270,14 +255,14 @@ const error = ref("");
 const schema = ref<AppSchema | null>(null);
 const formData = ref<FormData>({});
 const originalData = ref<FormData>({});
-const validationErrors = ref<ValidationErrors>(new Map());
+
 const compactMode = ref(props.compact);
+const fieldRefs = ref<Record<string, any>>({}); // Store field component references
+const formRef = ref<any>(null); // Form reference for validation
 
 // Computed properties
 const canSubmit = computed((): boolean => {
-  return (
-    !loading.value && !submitting.value && validationErrors.value.size === 0
-  );
+  return !loading.value && !submitting.value;
 });
 
 // Generate field infos using schema traversal with path resolution
@@ -481,39 +466,39 @@ const handleValidationSuccess = (): void => {
 };
 
 const validateForm = (): boolean => {
-  validationErrors.value.clear();
-
   if (!schema.value?.properties) {
     return true;
   }
 
-  const validationResult = validateSchemaData(
-    formData.value,
-    schema.value,
-    schema.value,
-    MAX_DEPTH
-  );
+  // Quasar form submission will automatically trigger validation for all fields
+  // We just need to check if any validation errors exist
+  let allValid = true;
 
-  if (!validationResult.valid) {
-    // Convert errors array to Map for compatibility
-    validationResult.errors.forEach((error) => {
-      const match = error.match(/Field '([^']+)'/);
-      const fieldName = match ? match[1] : "unknown";
-      validationErrors.value.set(fieldName, error);
-    });
+  // Get all field refs and trigger validation
+  Object.values(fieldRefs.value).forEach((fieldRef: any) => {
+    if (fieldRef && typeof fieldRef.triggerValidation === "function") {
+      const result = fieldRef.triggerValidation();
+      if (!result.valid) {
+        allValid = false;
+      }
+    }
+  });
 
-    emit("validation-error", validationErrors.value);
-    return false;
-  }
-
-  emit("validation-success");
-  return true;
+  return allValid;
 };
 
-const handleSubmit = async (): Promise<void> => {
-  // Validate form first
-  if (!validateForm()) {
-    return;
+const handleSubmit = async (evt?: Event): Promise<void> => {
+  // Prevent default form submission
+  if (evt) {
+    evt.preventDefault();
+  }
+
+  // Manually validate the form
+  if (formRef.value && typeof formRef.value.validate === "function") {
+    const isValid = await formRef.value.validate();
+    if (!isValid) {
+      return; // Validation failed, don't proceed
+    }
   }
 
   // Set submitting state
@@ -549,8 +534,38 @@ const handleSubmit = async (): Promise<void> => {
   }
 };
 
-const handleCancel = (): void => {
-  emit("cancel");
+const handleClear = (): void => {
+  if (props.showClearConfirmation) {
+    $q.dialog({
+      title: "Clear Form",
+      message: "Are you sure you want to clear all form data?",
+      cancel: true,
+      persistent: true,
+    }).onOk(() => {
+      formData.value = {};
+      emit("clear");
+    });
+  } else {
+    formData.value = {};
+    emit("clear");
+  }
+};
+
+const handleReset = (): void => {
+  if (props.showResetConfirmation) {
+    $q.dialog({
+      title: "Reset Form",
+      message: "Are you sure you want to reset the form to its initial state?",
+      cancel: true,
+      persistent: true,
+    }).onOk(() => {
+      formData.value = { ...originalData.value };
+      emit("reset", originalData.value);
+    });
+  } else {
+    formData.value = { ...originalData.value };
+    emit("reset", originalData.value);
+  }
 };
 
 // Watchers
@@ -598,7 +613,6 @@ defineExpose({
   submit: handleSubmit,
   reset: () => {
     formData.value = { ...originalData.value };
-    validationErrors.value.clear();
   },
   loadSchema,
 });

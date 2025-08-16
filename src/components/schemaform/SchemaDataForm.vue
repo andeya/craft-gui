@@ -96,7 +96,8 @@
                     icon="save"
                     color="primary"
                     :disabled="!canSave || loading"
-                    @click="saveData"
+                    type="submit"
+                    form="data-form"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.SAVE }}</QTooltip>
                   </QBtn>
@@ -135,67 +136,74 @@
         "
         class="form-fields"
       >
-        <QCard class="form-fields-card">
-          <QCardSection>
-            <div class="form-fields-header q-mb-md">
-              <h4 class="text-h6 text-grey-8 q-mb-none">
-                {{
-                  isNewMode
-                    ? UI_MESSAGES.FORM.CREATE_NEW_DATA
-                    : UI_MESSAGES.FORM.EDIT_DATA
-                }}
-              </h4>
-              <p class="text-caption text-grey-6 q-mb-none">
-                {{
-                  isNewMode
-                    ? UI_MESSAGES.FORM.FILL_FIELDS_TO_CREATE
-                    : UI_MESSAGES.FORM.MODIFY_FIELDS_TO_UPDATE
-                }}
-              </p>
-            </div>
-            <div
-              class="fields-container"
-              :class="`columns-${getRootColumnsLocal()}`"
-            >
-              <div
-                v-for="fieldInfo in schemaFieldInfos"
-                :key="fieldInfo.key"
-                :class="[
-                  `field-span-${getFieldSpanLocal(fieldInfo.key)}`,
-                  fieldInfo.schema.type === 'object' &&
-                  fieldInfo.schema.properties
-                    ? 'field-object'
-                    : 'field-simple',
-                ]"
-              >
-                <SchemaField
-                  :schema="fieldInfo.schema"
-                  :root-schema="schema"
-                  :model-value="fieldInfo.value"
-                  :is-modified="
-                    props.showModificationIndicator
-                      ? isFieldModified(fieldInfo.key)
-                      : false
-                  "
-                  :parent-key="fieldInfo.key"
-                  :check-nested-modification="
-                    props.showModificationIndicator
-                      ? isNestedFieldModified
-                      : () => false
-                  "
-                  :compact="compactMode"
-                  :field-path="fieldInfo.fieldPath"
-                  :columns="getFieldColumnsLocal(fieldInfo)"
-                  @update:model-value="updateFormData(fieldInfo.key, $event)"
-                  @validation-error="
-                    handleValidationError(fieldInfo.key, $event)
-                  "
-                  @validation-success="handleValidationSuccess(fieldInfo.key)"
-                />
+        <QForm ref="formRef" id="data-form" @submit="handleFormSubmit">
+          <QCard class="form-fields-card">
+            <QCardSection>
+              <div class="form-fields-header q-mb-md">
+                <h4 class="text-h6 text-grey-8 q-mb-none">
+                  {{
+                    isNewMode
+                      ? UI_MESSAGES.FORM.CREATE_NEW_DATA
+                      : UI_MESSAGES.FORM.EDIT_DATA
+                  }}
+                </h4>
+                <p class="text-caption text-grey-6 q-mb-none">
+                  {{
+                    isNewMode
+                      ? UI_MESSAGES.FORM.FILL_FIELDS_TO_CREATE
+                      : UI_MESSAGES.FORM.MODIFY_FIELDS_TO_UPDATE
+                  }}
+                </p>
               </div>
-            </div>
-          </QCardSection>
-        </QCard>
+              <div
+                class="fields-container"
+                :class="`columns-${getRootColumnsLocal()}`"
+              >
+                <div
+                  v-for="fieldInfo in schemaFieldInfos"
+                  :key="fieldInfo.key"
+                  :class="[
+                    `field-span-${getFieldSpanLocal(fieldInfo.key)}`,
+                    fieldInfo.schema.type === 'object' &&
+                    fieldInfo.schema.properties
+                      ? 'field-object'
+                      : 'field-simple',
+                  ]"
+                >
+                  <SchemaField
+                    :schema="fieldInfo.schema"
+                    :root-schema="schema"
+                    :model-value="fieldInfo.value"
+                    :is-modified="
+                      props.showModificationIndicator
+                        ? isFieldModified(fieldInfo.key)
+                        : false
+                    "
+                    :parent-key="fieldInfo.key"
+                    :check-nested-modification="
+                      props.showModificationIndicator
+                        ? isNestedFieldModified
+                        : () => false
+                    "
+                    :compact="compactMode"
+                    :field-path="fieldInfo.fieldPath"
+                    :columns="getFieldColumnsLocal(fieldInfo)"
+                    @update:model-value="updateFormData(fieldInfo.key, $event)"
+                    @validation-error="
+                      handleValidationError(fieldInfo.key, $event)
+                    "
+                    @validation-success="handleValidationSuccess(fieldInfo.key)"
+                    :ref="
+                      (el) => {
+                        if (el) fieldRefs[fieldInfo.key] = el;
+                      }
+                    "
+                  />
+                </div>
+              </div>
+            </QCardSection>
+          </QCard>
+        </QForm>
       </div>
 
       <!-- No Data Message -->
@@ -357,7 +365,7 @@ const showNotification = (type: string, message: string) => {
 const schema = ref<AppSchema | null>(null);
 const formData = ref<FormData>({});
 const originalData = ref<FormData>({});
-const validationErrors = ref(new Map<string, string>());
+
 const loading = ref(false);
 const error = ref("");
 const dataExists = ref(false);
@@ -365,6 +373,8 @@ const selectedSchema = ref("");
 const currentDataKey = ref(props.dataKey);
 const compactMode = ref(props.compact);
 const isNewMode = ref(false); // Track if we're in "new" mode
+const fieldRefs = ref<Record<string, any>>({}); // Store field component references
+const formRef = ref<any>(null); // Form reference for validation
 
 // ===== Helper Functions =====
 const getInitialSchemaId = () => {
@@ -384,7 +394,7 @@ const hasChanges = computed(() => {
 });
 
 const hasValidationErrors = computed(() => {
-  return validationErrors.value.size > 0;
+  return false; // Now handled by Quasar form validation
 });
 
 const canLoad = computed(() => {
@@ -665,8 +675,50 @@ const diffStringify = (obj: object) => {
   return props.showDiffBeforeSave!(obj);
 };
 
+const handleFormSubmit = async (evt?: Event) => {
+  // Prevent default form submission
+  if (evt) {
+    evt.preventDefault();
+  }
+
+  // Manually validate the form
+  if (formRef.value && typeof formRef.value.validate === "function") {
+    const isValid = await formRef.value.validate();
+    if (!isValid) {
+      return; // Validation failed, don't proceed
+    }
+  }
+
+  // Call the original saveData logic
+  await saveData();
+};
+
 const saveData = async () => {
   if (!canSave.value) return;
+
+  // Perform frontend validation before saving
+  if (!schema.value?.properties) {
+    return;
+  }
+
+  // Trigger validation for all SchemaField components
+  let allValid = true;
+
+  // Get all field refs and trigger validation
+  Object.values(fieldRefs.value).forEach((fieldRef: any) => {
+    if (fieldRef && typeof fieldRef.triggerValidation === "function") {
+      const result = fieldRef.triggerValidation();
+      if (!result.valid) {
+        allValid = false;
+      }
+    }
+  });
+
+  if (!allValid) {
+    return;
+  }
+
+  emit("validation-success");
 
   // Schema validation is now handled by the backend
 
@@ -889,12 +941,10 @@ const updateFormData = (key: string, value: any) => {
 };
 
 const handleValidationError = (key: string, error: string) => {
-  validationErrors.value.set(key, error);
   emit("validation-error", key, error);
 };
 
 const handleValidationSuccess = (key: string) => {
-  validationErrors.value.delete(key);
   emit("validation-success", key);
 };
 

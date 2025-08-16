@@ -135,12 +135,17 @@
                 :initial-data="apiFormInitialData"
                 :submit-button-text="apiSubmitButtonText"
                 :submit-button-icon="apiSubmitButtonIcon"
-                :cancel-button-text="apiCancelButtonText"
-                :cancel-button-icon="apiCancelButtonIcon"
+                :reset-button-text="apiResetButtonText"
+                :reset-button-icon="apiResetButtonIcon"
+                :clear-button-text="apiClearButtonText"
+                :clear-button-icon="apiClearButtonIcon"
+                :show-reset-button="true"
+                :show-clear-button="true"
                 :compact="apiCompactMode"
                 :columns="apiColumns"
                 @submit="handleApiSubmit"
-                @cancel="handleApiCancel"
+                @reset="handleApiReset"
+                @clear="handleApiClear"
                 @validation-error="handleApiValidationError"
                 @validation-success="handleApiValidationSuccess"
                 @schema-loaded="handleApiSchemaLoaded"
@@ -176,16 +181,32 @@
                       </div>
                       <div class="col-12 col-md-6">
                         <QInput
-                          v-model="apiCancelButtonText"
-                          label="Cancel Button Text"
+                          v-model="apiResetButtonText"
+                          label="Reset Button Text"
                           outlined
                           dense
                         />
                       </div>
                       <div class="col-12 col-md-6">
                         <QInput
-                          v-model="apiCancelButtonIcon"
-                          label="Cancel Button Icon"
+                          v-model="apiResetButtonIcon"
+                          label="Reset Button Icon"
+                          outlined
+                          dense
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QInput
+                          v-model="apiClearButtonText"
+                          label="Clear Button Text"
+                          outlined
+                          dense
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QInput
+                          v-model="apiClearButtonIcon"
+                          label="Clear Button Icon"
                           outlined
                           dense
                         />
@@ -336,8 +357,10 @@ const selectedApiSchema = ref<string>("");
 const apiFormInitialData = ref<Record<string, any>>({});
 const apiSubmitButtonText = ref("Submit");
 const apiSubmitButtonIcon = ref("send");
-const apiCancelButtonText = ref("Cancel");
-const apiCancelButtonIcon = ref("close");
+const apiResetButtonText = ref("Reset");
+const apiResetButtonIcon = ref("refresh");
+const apiClearButtonText = ref("Clear");
+const apiClearButtonIcon = ref("clear_all");
 
 const apiCompactMode = ref(false);
 const apiColumns = ref(0); // 0=auto, 1=single column, 2=double column
@@ -421,8 +444,12 @@ const handleApiSubmit = (
   }, 1000);
 };
 
-const handleApiCancel = () => {
-  addEventLog(`❌ API Form cancelled`);
+const handleApiReset = (originalData: any) => {
+  addEventLog(`🔄 API Form reset to: ${JSON.stringify(originalData, null, 2)}`);
+};
+
+const handleApiClear = () => {
+  addEventLog(`🗑️ API Form cleared`);
 };
 
 const handleApiValidationError = (errors: Map<string, string>) => {

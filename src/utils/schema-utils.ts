@@ -196,9 +196,13 @@ export function traverseSchema(
         return callback(resolvedSchema, path, parentSchema, parentKey);
       }
 
-      // For data initialization, check if the object itself has examples or default
-      // But for schema traversal (like field generation), we should continue
-      // We'll use a different approach - only apply this logic in initializeSchemaData
+      // Call callback for the object itself first
+      const objectResult = callback(
+        resolvedSchema,
+        path,
+        parentSchema,
+        parentKey
+      );
 
       if (resolvedSchema.properties) {
         const result: Record<string, any> = {};
@@ -222,7 +226,7 @@ export function traverseSchema(
         return result;
       }
 
-      return callback(resolvedSchema, path, parentSchema, parentKey);
+      return objectResult;
 
     case "array":
       if (!includeArrays) {
@@ -545,19 +549,33 @@ export function validateSchemaData(
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
+  // Then traverse schema for validations including required fields
   traverseSchema(
     schema,
     (currentSchema, path) => {
       const fieldPath = path.join(".");
       const value = getNestedValue(data, path);
 
-      // Required field validation
+      // Validate required fields for objects
       if (
-        currentSchema.required &&
-        (value === null || value === undefined || value === "")
+        currentSchema.type === "object" &&
+        currentSchema.properties &&
+        currentSchema.required
       ) {
-        errors.push(`Field '${fieldPath}' is required`);
-        return;
+        const requiredFields = currentSchema.required;
+
+        for (const requiredField of requiredFields) {
+          const fieldValue = getNestedValue(value, [requiredField]);
+
+          if (
+            fieldValue === null ||
+            fieldValue === undefined ||
+            fieldValue === ""
+          ) {
+            const fullPath = [...path, requiredField].join(".");
+            errors.push(`Field '${fullPath}' is required`);
+          }
+        }
       }
 
       // Skip validation for empty optional fields
@@ -583,6 +601,24 @@ export function validateSchemaData(
         ) {
           errors.push(
             `Field '${fieldPath}' maximum length is ${currentSchema.maxLength}`
+          );
+        }
+        if (
+          currentSchema.pattern !== undefined &&
+          !new RegExp(currentSchema.pattern).test(value)
+        ) {
+          errors.push(
+            `Field '${fieldPath}' does not match pattern: ${currentSchema.pattern}`
+          );
+        }
+        if (
+          currentSchema.enum !== undefined &&
+          !currentSchema.enum.includes(value)
+        ) {
+          errors.push(
+            `Field '${fieldPath}' must be one of: ${currentSchema.enum.join(
+              ", "
+            )}`
           );
         }
       }
@@ -618,7 +654,7 @@ export function validateSchemaData(
       includeObjects: true,
       includePrimitives: true,
     },
-    rootSchema
+    rootSchema || schema
   );
 
   return { valid: errors.length === 0, errors };

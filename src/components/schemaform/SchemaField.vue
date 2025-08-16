@@ -1,136 +1,142 @@
 <template>
   <div class="schema-field" :class="{ 'compact-mode': compact }">
-    <QForm @submit="handleSubmit">
-      <!-- Field Label and Description -->
-      <div class="field-header">
-        <label class="text-base font-medium q-mb-sm block">
-          {{ fieldDisplayName }}
-          <span v-if="resolvedSchema.required" class="text-red-500"> *</span>
-          <span
-            v-if="resolvedSchema.description && !compact"
-            class="field-description"
-          >
-            {{ resolvedSchema.description }}
-          </span>
-        </label>
-      </div>
+    <!-- Field Label and Description -->
+    <div class="field-header">
+      <label class="text-base font-medium q-mb-sm block">
+        {{ fieldDisplayName }}
+        <span v-if="resolvedSchema.required" class="text-red-500"> *</span>
+        <span
+          v-if="resolvedSchema.description && !compact"
+          class="field-description"
+        >
+          {{ resolvedSchema.description }}
+        </span>
+      </label>
+    </div>
 
-      <!-- Validation Error Message -->
-      <div v-if="validationError" class="validation-error q-mb-sm">
-        <QIcon name="error" color="red" size="sm" />
-        <span class="text-red-600 text-sm q-ml-xs">{{ validationError }}</span>
-      </div>
+    <!-- Validation Error Message -->
+    <div v-if="displayValidationError" class="validation-error q-mb-sm">
+      <QIcon name="error" color="red" size="sm" />
+      <span class="text-red-600 text-sm q-ml-xs">{{
+        displayValidationError
+      }}</span>
+    </div>
 
-      <!-- Input Field with Modification Indicator -->
-      <div
-        class="field-input-wrapper"
-        :class="{ 'field-modified': isThisFieldModified }"
-      >
-        <!-- String Input -->
-        <QInput
-          v-if="isStringInput"
-          :model-value="stringValue"
-          :placeholder="inputPlaceholder"
-          :disabled="resolvedSchema.readOnly"
-          :rules="validationRules"
-          :dense="compact"
-          :outlined="compact"
-          @update:model-value="handleValueChange"
-          @blur="validateField"
-        />
+    <!-- Input Field with Modification Indicator -->
+    <div
+      class="field-input-wrapper"
+      :class="{ 'field-modified': isThisFieldModified }"
+    >
+      <!-- String Input -->
+      <QInput
+        v-if="isStringInput"
+        ref="stringInputRef"
+        :name="props.fieldPath || props.parentKey || 'field'"
+        :model-value="stringValue"
+        :placeholder="inputPlaceholder"
+        :disabled="resolvedSchema.readOnly"
+        :rules="validationRules"
+        :dense="compact"
+        :outlined="compact"
+        @update:model-value="handleValueChange"
+        @blur="validateField"
+      />
 
-        <!-- Select Input -->
-        <QSelect
-          v-else-if="isSelectInput"
-          :model-value="stringValue"
-          :options="resolvedSchema.enum || []"
-          :label="fieldDisplayName"
-          :disabled="resolvedSchema.readOnly"
-          :rules="validationRules"
-          :dense="compact"
-          :outlined="compact"
-          @update:model-value="handleValueChange"
-          @blur="validateField"
-        />
+      <!-- Select Input -->
+      <QSelect
+        v-else-if="isSelectInput"
+        ref="selectInputRef"
+        :name="props.fieldPath || props.parentKey || 'field'"
+        :model-value="stringValue"
+        :options="resolvedSchema.enum || []"
+        :label="fieldDisplayName"
+        :disabled="resolvedSchema.readOnly"
+        :rules="validationRules"
+        :dense="compact"
+        :outlined="compact"
+        @update:model-value="handleValueChange"
+        @blur="validateField"
+      />
 
-        <!-- Number Input -->
-        <QInput
-          v-else-if="isNumberInput"
-          :model-value="numberValue"
-          type="number"
-          :min="resolvedSchema.minimum"
-          :max="resolvedSchema.maximum"
-          :placeholder="inputPlaceholder"
-          :disabled="resolvedSchema.readOnly"
-          :rules="validationRules"
-          :dense="compact"
-          :outlined="compact"
-          @update:model-value="handleValueChange"
-          @blur="validateField"
-        />
+      <!-- Number Input -->
+      <QInput
+        v-else-if="isNumberInput"
+        ref="numberInputRef"
+        :name="props.fieldPath || props.parentKey || 'field'"
+        :model-value="numberValue"
+        type="number"
+        :min="resolvedSchema.minimum"
+        :max="resolvedSchema.maximum"
+        :placeholder="inputPlaceholder"
+        :disabled="resolvedSchema.readOnly"
+        :rules="validationRules"
+        :dense="compact"
+        :outlined="compact"
+        @update:model-value="handleValueChange"
+        @blur="validateField"
+      />
 
-        <!-- Boolean Input -->
-        <QToggle
-          v-else-if="isBooleanInput"
-          :model-value="booleanValue"
-          :label="fieldDisplayName"
-          :disabled="resolvedSchema.readOnly"
-          :dense="compact"
-          @update:model-value="handleValueChange"
-        />
-      </div>
+      <!-- Boolean Input -->
+      <QToggle
+        v-else-if="isBooleanInput"
+        :model-value="booleanValue"
+        :label="fieldDisplayName"
+        :disabled="resolvedSchema.readOnly"
+        :dense="compact"
+        @update:model-value="handleValueChange"
+      />
+    </div>
 
-      <!-- Object Input -->
-      <div v-if="isObjectType" class="object-container">
-        <div v-if="resolvedSchema.properties" class="q-ml-md q-mt-sm">
+    <!-- Object Input -->
+    <div v-if="isObjectType" class="object-container">
+      <div v-if="resolvedSchema.properties" class="q-ml-md q-mt-sm">
+        <div
+          class="object-fields-container"
+          :class="`columns-${props.columns}`"
+        >
           <div
-            class="object-fields-container"
-            :class="`columns-${props.columns}`"
+            v-for="fieldInfo in objectFieldInfos"
+            :key="fieldInfo.key"
+            class="object-field-item"
           >
-            <div
-              v-for="fieldInfo in objectFieldInfos"
-              :key="fieldInfo.key"
-              class="object-field-item"
-            >
-              <SchemaField
-                :schema="fieldInfo.schema"
-                :root-schema="props.rootSchema"
-                :model-value="fieldInfo.value"
-                :is-modified="isNestedFieldModified(fieldInfo.key)"
-                :parent-key="fieldInfo.key"
-                :check-nested-modification="props.checkNestedModification"
-                :compact="compact"
-                :field-path="
-                  buildFieldPath(props.parentKey || '', fieldInfo.key)
-                "
-                @update:model-value="
-                  handleNestedValueUpdate(fieldInfo.key, $event)
-                "
-                @validation-error="handleNestedValidationError"
-                @validation-success="handleNestedValidationSuccess"
-              />
-            </div>
+            <SchemaField
+              :schema="fieldInfo.schema"
+              :root-schema="props.rootSchema"
+              :model-value="fieldInfo.value"
+              :is-modified="isNestedFieldModified(fieldInfo.key)"
+              :parent-key="fieldInfo.key"
+              :check-nested-modification="props.checkNestedModification"
+              :compact="compact"
+              :field-path="buildFieldPath(props.parentKey || '', fieldInfo.key)"
+              @update:model-value="
+                handleNestedValueUpdate(fieldInfo.key, $event)
+              "
+              @validation-error="handleNestedValidationError"
+              @validation-success="handleNestedValidationSuccess"
+            />
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Array Input -->
-      <div v-if="isArrayType" class="array-container">
-        <QInput
-          type="textarea"
-          v-model="arrayStringValue"
-          :placeholder="inputPlaceholder"
-          :rows="5"
-          :disabled="resolvedSchema.readOnly"
-          :rules="validationRules"
-          @update:model-value="handleArrayValueUpdate"
-          @blur="validateField"
-        />
-        <div class="text-caption text-grey-6 q-mt-xs">
-          Enter a valid JSON array
-        </div>
+    <!-- Array Input -->
+    <div v-if="isArrayType" class="array-container">
+      <QInput
+        ref="arrayInputRef"
+        :name="props.fieldPath || props.parentKey || 'field'"
+        type="textarea"
+        v-model="arrayStringValue"
+        :placeholder="inputPlaceholder"
+        :rows="5"
+        :disabled="resolvedSchema.readOnly"
+        :rules="validationRules"
+        @update:model-value="handleArrayValueUpdate"
+        @blur="validateField"
+      />
+      <div class="text-caption text-grey-6 q-mt-xs">
+        Enter a valid JSON array
       </div>
-    </QForm>
+    </div>
   </div>
 </template>
 
@@ -220,6 +226,11 @@ const fieldDisplayName = computed((): string => {
 
 const inputPlaceholder = computed((): string => {
   return resolvedSchema.value.description || "Enter value";
+});
+
+// Use internal validation error
+const displayValidationError = computed(() => {
+  return validationError.value;
 });
 
 // Generate object field infos using schema traversal
@@ -326,58 +337,290 @@ const getCurrentSchemaType = (): string => {
   return getSchemaType(resolvedSchema.value);
 };
 
-// Validation rules
-const validationRules = computed((): ValidationRule[] => {
-  const rules: ValidationRule[] = [];
+// Unified validation function
+const validateValue = (value: any): { valid: boolean; error?: string } => {
   const schema = resolvedSchema.value;
 
-  if (schema.required) {
-    rules.push(
-      (val: any): boolean | string =>
-        (val !== null && val !== undefined && val !== "") ||
-        "This field is required"
-    );
+  // For object types, we need to validate the object's required fields
+  if (schema.type === "object") {
+    if (schema.required && Array.isArray(schema.required)) {
+      for (const requiredField of schema.required) {
+        const fieldValue =
+          value && typeof value === "object" && !Array.isArray(value)
+            ? (value as Record<string, any>)[requiredField]
+            : undefined;
+
+        if (
+          fieldValue === null ||
+          fieldValue === undefined ||
+          fieldValue === ""
+        ) {
+          return {
+            valid: false,
+            error: `Field '${requiredField}' is required`,
+          };
+        }
+      }
+    }
+    return { valid: true };
   }
 
-  if (schema.type === "string") {
-    if (schema.minLength !== undefined) {
-      rules.push(
-        (val: any): boolean | string =>
-          !val ||
-          (typeof val === "string" && val.length >= schema.minLength!) ||
-          `Minimum length is ${schema.minLength}`
-      );
+  // Check if this field is required
+  let isRequired = false;
+
+  if (props.parentKey && props.rootSchema) {
+    // For root-level fields (like "args", "cookie")
+    if (props.rootSchema.required && Array.isArray(props.rootSchema.required)) {
+      isRequired = props.rootSchema.required.includes(props.parentKey);
     }
-    if (schema.maxLength !== undefined) {
-      rules.push(
-        (val: any): boolean | string =>
-          !val ||
-          (typeof val === "string" && val.length <= schema.maxLength!) ||
-          `Maximum length is ${schema.maxLength}`
-      );
+
+    // For nested fields (like "groupid", "parentid"), check if the field is in the parent object's required array
+    if (!isRequired && props.fieldPath) {
+      // Extract the parent path from fieldPath (e.g., "args.groupid" -> "args")
+      const pathParts = props.fieldPath.split(".");
+      if (pathParts.length > 1) {
+        const parentPath = pathParts.slice(0, -1).join(".");
+        const fieldName = pathParts[pathParts.length - 1];
+
+        // Get the parent object's schema by traversing the path
+        let parentSchema = props.rootSchema;
+        for (const part of parentPath.split(".")) {
+          if (parentSchema.properties && parentSchema.properties[part]) {
+            parentSchema = resolveSchemaRef(
+              parentSchema.properties[part],
+              props.rootSchema
+            );
+          } else {
+            break;
+          }
+        }
+
+        if (
+          parentSchema &&
+          parentSchema.required &&
+          Array.isArray(parentSchema.required)
+        ) {
+          isRequired = parentSchema.required.includes(fieldName);
+        }
+      }
+    }
+  }
+
+  if (isRequired && (value === null || value === undefined || value === "")) {
+    return {
+      valid: false,
+      error: "This field is required",
+    };
+  }
+
+  // If not required or has value, continue with other validations
+  if (value === null || value === undefined || value === "") {
+    return { valid: true };
+  }
+
+  // Type-specific validation
+  if (schema.type === "string" && typeof value === "string") {
+    if (schema.minLength !== undefined && value.length < schema.minLength) {
+      return {
+        valid: false,
+        error: `Minimum length is ${schema.minLength}`,
+      };
+    }
+    if (schema.maxLength !== undefined && value.length > schema.maxLength) {
+      return {
+        valid: false,
+        error: `Maximum length is ${schema.maxLength}`,
+      };
+    }
+    if (
+      schema.pattern !== undefined &&
+      !new RegExp(schema.pattern).test(value)
+    ) {
+      return {
+        valid: false,
+        error: `Does not match pattern: ${schema.pattern}`,
+      };
+    }
+    if (schema.enum !== undefined && !schema.enum.includes(value)) {
+      return {
+        valid: false,
+        error: `Must be one of: ${schema.enum.join(", ")}`,
+      };
     }
   }
 
   if (schema.type === "integer" || schema.type === "number") {
-    if (schema.minimum !== undefined) {
-      rules.push(
-        (val: any): boolean | string =>
-          val === null ||
-          val === undefined ||
-          (typeof val === "number" && val >= schema.minimum!) ||
-          `Minimum value is ${schema.minimum}`
-      );
+    const numValue = Number(value);
+    if (isNaN(numValue)) {
+      return {
+        valid: false,
+        error: "Must be a valid number",
+      };
     }
-    if (schema.maximum !== undefined) {
-      rules.push(
-        (val: any): boolean | string =>
-          val === null ||
-          val === undefined ||
-          (typeof val === "number" && val <= schema.maximum!) ||
-          `Maximum value is ${schema.maximum}`
-      );
+    if (schema.minimum !== undefined && numValue < schema.minimum) {
+      return {
+        valid: false,
+        error: `Minimum value is ${schema.minimum}`,
+      };
+    }
+    if (schema.maximum !== undefined && numValue > schema.maximum) {
+      return {
+        valid: false,
+        error: `Maximum value is ${schema.maximum}`,
+      };
     }
   }
+
+  // Array validation
+  if (schema.type === "array") {
+    if (!Array.isArray(value)) {
+      return {
+        valid: false,
+        error: "Must be a valid array",
+      };
+    }
+    if (schema.minItems !== undefined && value.length < schema.minItems) {
+      return {
+        valid: false,
+        error: `Minimum ${schema.minItems} items required`,
+      };
+    }
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+      return {
+        valid: false,
+        error: `Maximum ${schema.maxItems} items allowed`,
+      };
+    }
+
+    // Validate array items if items schema is defined
+    if (schema.items) {
+      const itemSchema = Array.isArray(schema.items)
+        ? schema.items[0]
+        : schema.items;
+      for (let i = 0; i < value.length; i++) {
+        const itemValue = value[i];
+
+        // Type validation
+        if (itemSchema.type === "string" && typeof itemValue !== "string") {
+          return {
+            valid: false,
+            error: `Item ${i + 1} must be a string`,
+          };
+        }
+        if (itemSchema.type === "number" && typeof itemValue !== "number") {
+          return {
+            valid: false,
+            error: `Item ${i + 1} must be a number`,
+          };
+        }
+        if (
+          itemSchema.type === "integer" &&
+          (typeof itemValue !== "number" || !Number.isInteger(itemValue))
+        ) {
+          return {
+            valid: false,
+            error: `Item ${i + 1} must be an integer`,
+          };
+        }
+        if (itemSchema.type === "boolean" && typeof itemValue !== "boolean") {
+          return {
+            valid: false,
+            error: `Item ${i + 1} must be a boolean`,
+          };
+        }
+
+        // Additional validations for strings
+        if (itemSchema.type === "string" && typeof itemValue === "string") {
+          if (
+            itemSchema.minLength !== undefined &&
+            itemValue.length < itemSchema.minLength
+          ) {
+            return {
+              valid: false,
+              error: `Item ${i + 1}: minimum length is ${itemSchema.minLength}`,
+            };
+          }
+          if (
+            itemSchema.maxLength !== undefined &&
+            itemValue.length > itemSchema.maxLength
+          ) {
+            return {
+              valid: false,
+              error: `Item ${i + 1}: maximum length is ${itemSchema.maxLength}`,
+            };
+          }
+          if (
+            itemSchema.pattern !== undefined &&
+            !new RegExp(itemSchema.pattern).test(itemValue)
+          ) {
+            return {
+              valid: false,
+              error: `Item ${i + 1}: does not match pattern`,
+            };
+          }
+          if (
+            itemSchema.enum !== undefined &&
+            !itemSchema.enum.includes(itemValue)
+          ) {
+            return {
+              valid: false,
+              error: `Item ${i + 1}: must be one of ${itemSchema.enum.join(
+                ", "
+              )}`,
+            };
+          }
+        }
+
+        // Additional validations for numbers
+        if (
+          (itemSchema.type === "number" || itemSchema.type === "integer") &&
+          typeof itemValue === "number"
+        ) {
+          if (
+            itemSchema.minimum !== undefined &&
+            itemValue < itemSchema.minimum
+          ) {
+            return {
+              valid: false,
+              error: `Item ${i + 1}: minimum value is ${itemSchema.minimum}`,
+            };
+          }
+          if (
+            itemSchema.maximum !== undefined &&
+            itemValue > itemSchema.maximum
+          ) {
+            return {
+              valid: false,
+              error: `Item ${i + 1}: maximum value is ${itemSchema.maximum}`,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // Boolean validation
+  if (schema.type === "boolean") {
+    if (typeof value !== "boolean") {
+      return {
+        valid: false,
+        error: "Must be a boolean value",
+      };
+    }
+  }
+
+  return { valid: true };
+};
+
+// Validation rules for Quasar
+const validationRules = computed((): ValidationRule[] => {
+  const rules: ValidationRule[] = [];
+
+  // Add custom validation rule that uses our unified validation function
+  rules.push((val: any): boolean | string => {
+    const result = validateValue(val);
+    return result.valid || result.error || "Validation failed";
+  });
 
   return rules;
 });
@@ -402,59 +645,55 @@ watch(
 
 // Validation function
 const validateField = (): boolean => {
-  const value = internalValue.value;
-  const schema = resolvedSchema.value;
+  const result = validateValue(internalValue.value);
 
-  validationError.value = "";
-
-  if (
-    schema.required &&
-    (value === null || value === undefined || value === "")
-  ) {
-    validationError.value = "This field is required";
+  if (result.valid) {
+    validationError.value = "";
+    emit("validation-success");
+    return true;
+  } else {
+    validationError.value = result.error || "";
     emit("validation-error", validationError.value);
     return false;
   }
+};
 
-  if (value === null || value === undefined || value === "") {
-    emit("validation-success");
-    return true;
+// Refs for input components
+const stringInputRef = ref<any>(null);
+const selectInputRef = ref<any>(null);
+const numberInputRef = ref<any>(null);
+const arrayInputRef = ref<any>(null);
+
+// Method to trigger validation and return result
+const triggerValidation = (): { valid: boolean; error?: string } => {
+  // Get the appropriate input ref based on the field type
+  let inputRef: any = null;
+  if (isStringInput.value) {
+    inputRef = stringInputRef.value;
+  } else if (isSelectInput.value) {
+    inputRef = selectInputRef.value;
+  } else if (isNumberInput.value) {
+    inputRef = numberInputRef.value;
+  } else if (isArrayType.value) {
+    inputRef = arrayInputRef.value;
   }
 
-  if (schema.type === "string" && typeof value === "string") {
-    if (schema.minLength !== undefined && value.length < schema.minLength) {
-      validationError.value = `Minimum length is ${schema.minLength}`;
-      emit("validation-error", validationError.value);
-      return false;
+  // If we have an input ref, use Quasar's validate method and force validation display
+  if (inputRef && typeof inputRef.validate === "function") {
+    // Force the field to be "touched" so validation errors will show
+    if (inputRef.setTouched) {
+      inputRef.setTouched(true);
     }
-    if (schema.maxLength !== undefined && value.length > schema.maxLength) {
-      validationError.value = `Maximum length is ${schema.maxLength}`;
-      emit("validation-error", validationError.value);
-      return false;
-    }
+
+    const validationResult = inputRef.validate();
+    return {
+      valid: validationResult === true,
+      error: validationResult === true ? undefined : validationResult,
+    };
   }
 
-  if (schema.type === "integer" || schema.type === "number") {
-    const numValue = Number(value);
-    if (isNaN(numValue)) {
-      validationError.value = "Must be a valid number";
-      emit("validation-error", validationError.value);
-      return false;
-    }
-    if (schema.minimum !== undefined && numValue < schema.minimum) {
-      validationError.value = `Minimum value is ${schema.minimum}`;
-      emit("validation-error", validationError.value);
-      return false;
-    }
-    if (schema.maximum !== undefined && numValue > schema.maximum) {
-      validationError.value = `Maximum value is ${schema.maximum}`;
-      emit("validation-error", validationError.value);
-      return false;
-    }
-  }
-
-  emit("validation-success");
-  return true;
+  // Fallback to unified validation function
+  return validateValue(internalValue.value);
 };
 
 // Value change handlers
@@ -520,9 +759,15 @@ const handleNestedValidationSuccess = (): void => {
   emit("validation-success");
 };
 
-const handleSubmit = (): void => {
-  validateField();
-};
+// Expose methods for parent components
+defineExpose({
+  triggerValidation,
+  validateField,
+  stringInputRef,
+  selectInputRef,
+  numberInputRef,
+  arrayInputRef,
+});
 </script>
 
 <style scoped>
