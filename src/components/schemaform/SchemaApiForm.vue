@@ -280,10 +280,8 @@ const loadSchema = async (): Promise<void> => {
       schemaId: props.schemaId,
     });
 
-    console.log(
-      `[SchemaApiForm] Schema loaded:`,
-      JSON.parse(JSON.stringify(schemaData))
-    );
+    console.log(`[SchemaApiForm] Schema loaded:`);
+    console.log(JSON.stringify(schemaData, null, 2));
 
     schema.value = schemaData as AppSchema;
     initializeFormData();
