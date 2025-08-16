@@ -67,7 +67,7 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     app.exit(4);
     return;
   }
-  if let Err(e) = config::init_config().await {
+  if let Err(e) = config::init_config() {
     log::error!("Failed to initialize config: {}", e);
     app.exit(5);
     return;

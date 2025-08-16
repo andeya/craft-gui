@@ -1,9 +1,9 @@
-use crate::appdata::AppData;
-use reindeer::Entity;
+use crate::{appdata::AppData, sled_db};
+use aarc::{Arc, AtomicArc, Guard};
+use reindeer::{AsBytes, Entity};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, OnceLock};
-use tokio::sync::RwLock;
+use std::sync::OnceLock;
 
 /// Application configuration root structure
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
@@ -91,48 +91,57 @@ impl Entity for AppConfig {
   fn store_name() -> &'static str {
     "AppConfig"
   }
-
   fn get_key(&self) -> &Self::Key {
     &0
   }
-
   fn set_key(&mut self, _key: &Self::Key) {}
+
+  fn save(&self, db: &reindeer::Db) -> reindeer::Result<()> {
+    save_db(self, db)?;
+    set_config(self.clone());
+    Ok(())
+  }
 }
 
-static CONFIG: OnceLock<RwLock<Arc<AppConfig>>> = OnceLock::new();
+fn save_db(config: &AppConfig, db: &reindeer::Db) -> reindeer::Result<()> {
+  AppConfig::get_tree(db)?.insert(
+    &config.get_key().as_bytes(),
+    reindeer::bincode_serialize(config)?,
+  )?;
+  Ok(())
+}
 
-pub async fn init_config() -> Result<(), String> {
+static CONFIG: OnceLock<AtomicArc<AppConfig>> = OnceLock::new();
+
+pub fn init_config() -> Result<(), String> {
   let config = AppConfig::get_data(&0)?;
   let config = if let Some(config) = config {
     config
   } else {
     let config = AppConfig::default();
-    config
-      .save_data()
-      .map_err(|e| format!("Failed to create config: {:?}", e))?;
+    save_db(&config, sled_db()).map_err(|e| format!("Failed to create config: {:?}", e))?;
     config
   };
   CONFIG
-    .set(RwLock::new(Arc::new(config)))
-    .map_err(|e| format!("Already initialized: {:?}", e))
+    .set(AtomicArc::new(config))
+    .map_err(|e| format!("AppConfig already initialized: {:?}", *e.load().unwrap()))
 }
 
-pub async fn get_config() -> Arc<AppConfig> {
-  CONFIG.get().unwrap().read().await.clone()
+pub fn get_config() -> Guard<AppConfig> {
+  CONFIG.get().unwrap().load().unwrap()
 }
 
-pub async fn load_config() -> Result<Arc<AppConfig>, String> {
-  let config = Arc::new(AppConfig::get_data(&0)?.ok_or("Config not found")?);
-  set_config(config.clone()).await;
-  Ok(config)
+pub fn load_config() -> Result<Arc<AppConfig>, String> {
+  let config = AppConfig::get_data(&0)?.ok_or("Config not found")?;
+  Ok(set_config(config))
 }
 
-pub async fn save_config(config: AppConfig) -> Result<(), String> {
-  config.save_data()?;
-  set_config(Arc::new(config)).await;
-  Ok(())
+pub fn save_config(config: &AppConfig) -> Result<(), String> {
+  config.save_data()
 }
 
-async fn set_config(config: Arc<AppConfig>) {
-  *CONFIG.get().unwrap().write().await = config;
+fn set_config(config: AppConfig) -> Arc<AppConfig> {
+  let config = Arc::new(config);
+  CONFIG.get().unwrap().store(Some(&config));
+  config
 }
