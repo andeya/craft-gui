@@ -173,6 +173,15 @@ const internalValue = ref<FieldValue>(props.modelValue);
 const arrayStringValue = ref("");
 const validationError = ref("");
 
+// Watch for modelValue changes to update internalValue
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    internalValue.value = newValue;
+  },
+  { immediate: true }
+);
+
 // Computed properties
 const resolvedSchema = computed((): AppSchema => {
   // Resolve $ref references using utility function
@@ -271,11 +280,15 @@ const objectFieldInfos = computed(() => {
 
 // Value conversions for different input types
 const stringValue = computed((): string => {
-  return String(internalValue.value || "");
+  return internalValue.value !== undefined && internalValue.value !== null
+    ? String(internalValue.value)
+    : "";
 });
 
 const numberValue = computed((): number => {
-  return Number(internalValue.value || 0);
+  return internalValue.value !== undefined && internalValue.value !== null
+    ? Number(internalValue.value)
+    : 0;
 });
 
 const booleanValue = computed((): boolean => {
@@ -702,9 +715,11 @@ const handleValueChange = (value: FieldValue): void => {
   const processedValue = convertValueToSchemaType(value, schemaType);
 
   internalValue.value = processedValue;
-  if (validateField()) {
-    emit("update:model-value", processedValue);
-  }
+  validateField(); // Still validate for UI feedback, but don't block updates
+
+  // Always emit update:model-value, even if validation fails
+  // This allows users to clear fields and reset them later
+  emit("update:model-value", processedValue);
 };
 
 const handleArrayValueUpdate = (value: string | number | null): void => {
@@ -763,6 +778,9 @@ const handleNestedValidationSuccess = (): void => {
 defineExpose({
   triggerValidation,
   validateField,
+  clearValidation: () => {
+    validationError.value = "";
+  },
   stringInputRef,
   selectInputRef,
   numberInputRef,

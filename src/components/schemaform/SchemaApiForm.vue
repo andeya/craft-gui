@@ -292,10 +292,13 @@ const schemaFieldInfos = computed(() => {
         schema.value!
       );
 
+      // Ensure we get the current value from formData
+      const currentValue = formData.value[key];
+
       fieldInfos.push({
         key,
         schema: resolvedSchema,
-        value: formData.value[key],
+        value: currentValue,
         fieldPath: resolvedInfo.fieldPath,
         isRefField: resolvedInfo.isRefField,
         refPath: resolvedInfo.refPath,
@@ -390,21 +393,22 @@ const initializeFormData = (): void => {
     return;
   }
 
-  // If we have initial data, use it directly
-  if (Object.keys(props.initialData).length > 0) {
-    formData.value = { ...props.initialData };
-    originalData.value = JSON.parse(JSON.stringify(formData.value));
-    return;
-  }
-
-  // Only initialize with schema defaults when there's no initial data
+  // Get schema defaults to ensure all fields are present
   const defaultData = initializeSchemaData(
     schema.value,
     schema.value,
     MAX_DEPTH
   );
 
+  // Always start with schema defaults to ensure all fields are present
   formData.value = { ...defaultData };
+
+  // If we have initial data, merge it with defaults (initialData takes precedence)
+  if (Object.keys(props.initialData).length > 0) {
+    formData.value = { ...formData.value, ...props.initialData };
+  }
+
+  // Store the complete initial state
   originalData.value = JSON.parse(JSON.stringify(formData.value));
 };
 
@@ -519,9 +523,16 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
     // Emit submit event with callback for result
     emit("submit", formData.value, (success: boolean, message?: string) => {
       clearTimeout(timeoutId); // Clear the timeout
-      if (success && props.showSuccessNotification) {
-        showNotification("positive", message || "Form submitted successfully");
-      } else if (!success && message) {
+      if (success) {
+        // Update original data when submit is successful
+        updateOriginalData();
+        if (props.showSuccessNotification) {
+          showNotification(
+            "positive",
+            message || "Form submitted successfully"
+          );
+        }
+      } else if (message) {
         showNotification("negative", message);
       }
       submitting.value = false;
@@ -559,13 +570,36 @@ const handleReset = (): void => {
       cancel: true,
       persistent: true,
     }).onOk(() => {
-      formData.value = { ...originalData.value };
-      emit("reset", originalData.value);
+      resetFormData();
     });
   } else {
-    formData.value = { ...originalData.value };
-    emit("reset", originalData.value);
+    resetFormData();
   }
+};
+
+const resetFormData = (): void => {
+  // Reset form data to original state
+  // Use deep clone to ensure all nested objects are properly reset
+  formData.value = JSON.parse(JSON.stringify(originalData.value));
+
+  // Clear form validation state
+  if (formRef.value && typeof formRef.value.resetValidation === "function") {
+    formRef.value.resetValidation();
+  }
+
+  // Clear validation state for all field components
+  Object.values(fieldRefs.value).forEach((fieldRef: any) => {
+    if (fieldRef && typeof fieldRef.clearValidation === "function") {
+      fieldRef.clearValidation();
+    }
+  });
+
+  emit("reset", originalData.value);
+};
+
+// Update original data when form is successfully submitted or when user confirms changes
+const updateOriginalData = (): void => {
+  originalData.value = JSON.parse(JSON.stringify(formData.value));
 };
 
 // Watchers
@@ -611,9 +645,8 @@ defineExpose({
   },
   validate: validateForm,
   submit: handleSubmit,
-  reset: () => {
-    formData.value = { ...originalData.value };
-  },
+  reset: resetFormData,
+  updateOriginalData,
   loadSchema,
 });
 </script>
