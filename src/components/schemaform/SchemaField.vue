@@ -100,7 +100,9 @@
                 :parent-key="fieldInfo.key"
                 :check-nested-modification="props.checkNestedModification"
                 :compact="compact"
-                :field-key="fieldInfo.key"
+                :field-path="
+                  buildFieldPath(props.parentKey || '', fieldInfo.key)
+                "
                 @update:model-value="
                   handleNestedValueUpdate(fieldInfo.key, $event)
                 "
@@ -146,6 +148,7 @@ import {
   getSchemaType,
   traverseSchemaForFields,
 } from "../../utils/schema-utils";
+import { getFieldName, buildFieldPath } from "./layout-utils";
 
 const props = withDefaults(defineProps<SchemaFieldProps>(), {
   rootSchema: null,
@@ -153,7 +156,7 @@ const props = withDefaults(defineProps<SchemaFieldProps>(), {
   parentKey: "",
   checkNestedModification: () => false,
   compact: false,
-  fieldKey: "",
+  fieldPath: "",
   columns: 1,
 });
 
@@ -210,7 +213,9 @@ const isThisFieldModified = computed((): boolean => {
 });
 
 const fieldDisplayName = computed((): string => {
-  return resolvedSchema.value.title || props.fieldKey || "Field";
+  // Use schema title first, then fallback to the field name extracted from fieldPath
+  const fallbackName = getFieldName(props.fieldPath);
+  return resolvedSchema.value.title || fallbackName;
 });
 
 const inputPlaceholder = computed((): string => {
@@ -247,8 +252,7 @@ const objectFieldInfos = computed(() => {
       includeArrays: true,
       includeObjects: true,
       includePrimitives: true,
-    },
-    props.rootSchema || undefined
+    }
   );
 
   return fieldInfos;

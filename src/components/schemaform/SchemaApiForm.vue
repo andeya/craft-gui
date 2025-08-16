@@ -73,7 +73,7 @@
                   v-for="fieldInfo in schemaFieldInfos"
                   :key="fieldInfo.key"
                   :class="[
-                    `field-span-${getFieldSpanLocal(fieldInfo.key)}`,
+                    `field-span-${getFieldSpanLocal(fieldInfo)}`,
                     fieldInfo.schema.type === 'object' &&
                     fieldInfo.schema.properties
                       ? 'field-object'
@@ -96,8 +96,8 @@
                         : () => false
                     "
                     :compact="compactMode"
-                    :field-key="fieldInfo.key"
-                    :columns="getFieldColumnsLocal(fieldInfo.key)"
+                    :field-path="fieldInfo.fieldPath"
+                    :columns="getFieldColumnsLocal(fieldInfo)"
                     @update:model-value="
                       handleFieldUpdate(fieldInfo.key, $event)
                     "
@@ -210,7 +210,7 @@ import type {
   ValidationErrors,
   SchemaApiFormProps,
   SchemaApiFormEmits,
-  FieldLayoutConfig,
+  // FieldLayoutConfig,
 } from "./types";
 import {
   initializeSchemaData,
@@ -219,11 +219,13 @@ import {
 } from "../../utils/schema-utils";
 import {
   getFieldLayout,
-  getRootLayout,
-  getFieldColumns,
-  getFieldSpan,
+  // getRootLayout,
+  // getFieldColumns,
+  // getFieldSpan,
   getRootColumns,
+  getFieldLayoutWithRef,
 } from "./layout-utils";
+import { fieldPathResolver } from "./ref-path-resolver";
 
 // Constants
 const MAX_DEPTH = 10;
@@ -278,7 +280,7 @@ const canSubmit = computed((): boolean => {
   );
 });
 
-// Generate field infos using schema traversal
+// Generate field infos using schema traversal with path resolution
 const schemaFieldInfos = computed(() => {
   if (!schema.value) return [];
 
@@ -286,6 +288,9 @@ const schemaFieldInfos = computed(() => {
     key: string;
     schema: AppSchema;
     value: any;
+    fieldPath: string;
+    isRefField: boolean;
+    refPath?: string;
   }> = [];
 
   // For form fields, we need to traverse the schema properties directly
@@ -294,10 +299,21 @@ const schemaFieldInfos = computed(() => {
       // Resolve $ref references for the property schema
       const resolvedSchema = resolveSchemaRef(propSchema, schema.value!);
 
+      // Resolve field path with $ref context
+      const resolvedInfo = fieldPathResolver.resolveFieldPath(
+        key,
+        "",
+        propSchema,
+        schema.value!
+      );
+
       fieldInfos.push({
         key,
         schema: resolvedSchema,
         value: formData.value[key],
+        fieldPath: resolvedInfo.fieldPath,
+        isRefField: resolvedInfo.isRefField,
+        refPath: resolvedInfo.refPath,
       });
     });
   }
@@ -305,14 +321,37 @@ const schemaFieldInfos = computed(() => {
   return fieldInfos;
 });
 
-// Layout utility functions using shared implementation
-const getFieldLayoutLocal = (fieldKey: string) =>
-  getFieldLayout(fieldKey, props.fieldLayoutConfig);
-const getRootLayoutLocal = () => getRootLayout(props.fieldLayoutConfig);
-const getFieldColumnsLocal = (fieldKey: string) =>
-  getFieldColumns(fieldKey, props.fieldLayoutConfig, props.columns);
-const getFieldSpanLocal = (fieldKey: string) =>
-  getFieldSpan(fieldKey, props.fieldLayoutConfig);
+// Layout utility functions using shared implementation with $ref support
+const getFieldLayoutLocal = (fieldInfo: any) => {
+  if (fieldInfo.isRefField && fieldInfo.refPath) {
+    // Use $ref-aware layout resolution
+    const resolvedInfo = {
+      fieldPath: fieldInfo.fieldPath,
+      parentPath: fieldInfo.key,
+      fieldName: fieldInfo.key,
+      isRefField: fieldInfo.isRefField,
+      refPath: fieldInfo.refPath,
+      schema: fieldInfo.schema,
+    };
+    return getFieldLayoutWithRef(resolvedInfo, props.fieldLayoutConfig);
+  } else {
+    // Use standard path-based resolution
+    return getFieldLayout(fieldInfo.fieldPath, props.fieldLayoutConfig);
+  }
+};
+
+// const getRootLayoutLocal = () => getRootLayout(props.fieldLayoutConfig);
+
+const getFieldColumnsLocal = (fieldInfo: any) => {
+  const layout = getFieldLayoutLocal(fieldInfo);
+  return layout?.columns ?? props.columns;
+};
+
+const getFieldSpanLocal = (fieldInfo: any) => {
+  const layout = getFieldLayoutLocal(fieldInfo);
+  return layout?.span ?? 1;
+};
+
 const getRootColumnsLocal = () =>
   getRootColumns(props.fieldLayoutConfig, props.columns);
 
@@ -655,7 +694,7 @@ defineExpose({
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  max-height: 60vh;
+  max-height: v-bind("props.maxHeight");
   overflow-y: auto;
 }
 
@@ -712,7 +751,7 @@ defineExpose({
   display: grid;
   gap: 8px;
   width: 100%;
-  max-height: 50vh;
+  max-height: v-bind("props.maxHeight");
   overflow-y: auto;
   padding-right: 8px;
   scrollbar-width: thin;

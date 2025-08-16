@@ -55,9 +55,9 @@
               :auto-load="false"
               :columns="dataFormColumns"
               :field-layout-config="[
-                { fieldKey: undefined, columns: 3 }, // First level fields in 3 columns
-                { fieldKey: 'complexField', columns: 3, span: 2 }, // Complex field sub-fields in 3 columns, spans 2 columns
-                { fieldKey: 'simpleField', columns: 1, span: 1 }, // Simple field sub-fields in 1 column, spans 1 column
+                // { fieldPath: undefined, columns: 3 }, // First level fields in 3 columns
+                // { fieldPath: 'complexField', columns: 3, span: 2 }, // Complex field sub-fields in 3 columns, spans 2 columns
+                // { fieldPath: 'simpleField', columns: 1, span: 1 }, // Simple field sub-fields in 1 column, spans 1 column
               ]"
               @save="handleSave"
               @load="handleLoad"

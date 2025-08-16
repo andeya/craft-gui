@@ -17,7 +17,7 @@ export type ValidationErrors = Map<string, string>;
 
 // Field layout configuration
 export interface FieldLayoutConfig {
-  fieldKey?: string; // null means first level fields
+  fieldPath?: string; // Field path (e.g., "user.name", "profile.email") - undefined for root level
   columns: number; // Number of columns for sub-fields of this field
   span?: number; // Number of columns this field spans in the grid (optional)
 }
@@ -31,7 +31,7 @@ export interface SchemaFieldProps {
   parentKey: string;
   checkNestedModification: (parentKey: string, childKey: string) => boolean;
   compact?: boolean;
-  fieldKey?: string; // Field key in the schema object
+  fieldPath?: string; // Full field path (e.g., "user.name", "profile.email")
   columns?: number; // Number of columns for nested fields
 }
 
@@ -146,7 +146,7 @@ export interface ValidationContext {
   fieldName: string;
   schema: AppSchema;
   value: unknown;
-  fieldKey?: string;
+  fieldPath?: string;
 }
 
 export interface ValidationResult {

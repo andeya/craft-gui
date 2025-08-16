@@ -37,7 +37,7 @@ export function resolveSchemaRef(
   const refPath = schema.$ref;
 
   // Debug logging in development
-  if (import.meta.env.DEV) {
+  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
     console.log(`[resolveSchemaRef] Resolving: ${refPath}`);
     console.log(
       `[resolveSchemaRef] Root schema keys:`,
@@ -49,12 +49,14 @@ export function resolveSchemaRef(
     );
   }
 
-  // Prevent circular references
+  // Note: Circular reference detection is now handled in traverseSchemaForFields
+  // This function only resolves references without circular detection
   if (visited.has(refPath)) {
-    console.warn(`Circular reference detected: ${refPath}`);
+    // Skip already visited references to avoid infinite recursion
     return schema;
   }
 
+  // Add to visited set to prevent infinite recursion
   visited.add(refPath);
 
   let resolved: AppSchema | undefined;
@@ -87,7 +89,7 @@ export function resolveSchemaRef(
 
   if (resolved) {
     // Debug logging in development
-    if (import.meta.env.DEV) {
+    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
       console.log(`[resolveSchemaRef] Successfully resolved: ${refPath}`);
       console.log(`[resolveSchemaRef] Resolved schema:`, resolved);
     }
@@ -100,7 +102,7 @@ export function resolveSchemaRef(
   }
 
   // Debug logging for unresolved references
-  if (import.meta.env.DEV) {
+  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
     console.warn(`[resolveSchemaRef] Failed to resolve: ${refPath}`);
   }
 
@@ -324,17 +326,38 @@ export function initializeSchemaData(
 }
 
 /**
- * Traverse schema for field generation (doesn't stop at object examples/defaults)
+ * Traverse schema to find and process fields
+ * Optimized to handle $ref circular references while allowing object traversal to continue
  */
 export function traverseSchemaForFields(
   schema: AppSchema,
   callback: SchemaTraversalCallback,
+  options: SchemaTraversalOptions = {}
+): any {
+  return traverseSchemaForFieldsInternal(
+    schema,
+    callback,
+    options,
+    schema, // Use the same schema as root
+    [],
+    undefined,
+    undefined,
+    [] // Track current $def resolution chain for circular detection
+  );
+}
+
+/**
+ * Internal function for schema traversal with all internal parameters
+ */
+function traverseSchemaForFieldsInternal(
+  schema: AppSchema,
+  callback: SchemaTraversalCallback,
   options: SchemaTraversalOptions = {},
-  rootSchema?: AppSchema,
+  rootSchema: AppSchema,
   path: string[] = [],
   parentSchema?: AppSchema,
   parentKey?: string,
-  visited: Set<string> = new Set()
+  defChain: string[] = [] // Track current $def resolution chain for circular detection
 ): any {
   const {
     maxDepth = 10,
@@ -349,23 +372,47 @@ export function traverseSchemaForFields(
     return callback(schema, path, parentSchema, parentKey);
   }
 
-  // Create a unique identifier for this schema node to detect cycles
-  const nodeId = path.length > 0 ? path.join(".") : "root";
-
-  // Check for circular references
-  if (visited.has(nodeId)) {
-    console.warn(
-      `Circular reference detected in schema traversal at path: ${nodeId}`
-    );
-    return callback(schema, path, parentSchema, parentKey);
-  }
-
-  // Add current node to visited set
-  visited.add(nodeId);
-
   // Resolve $ref references if enabled
-  const resolvedSchema =
-    resolveRefs && rootSchema ? resolveSchemaRef(schema, rootSchema) : schema;
+  let resolvedSchema = schema;
+  let newDefChain = defChain;
+
+  if (resolveRefs && rootSchema && schema.$ref) {
+    const refPath = schema.$ref;
+
+    // Only track $def references for circular detection
+    if (refPath.startsWith("#/$defs/")) {
+      // Check if this $def is already in the current resolution chain
+      if (defChain.includes(refPath)) {
+        // This is a circular reference in the current path
+        console.warn(
+          `Circular $def reference detected: ${refPath} at path: ${path.join(
+            "."
+          )}`
+        );
+        // Don't resolve this $ref, but continue with the current schema to find other fields
+        resolvedSchema = schema; // Keep the original schema with $ref
+      } else {
+        // Add to the current resolution chain
+        newDefChain = [...defChain, refPath];
+
+        // Resolve the reference
+        resolvedSchema = resolveSchemaRef(
+          schema,
+          rootSchema,
+          maxDepth,
+          new Set()
+        );
+      }
+    } else {
+      // For non-$defs references, just resolve normally
+      resolvedSchema = resolveSchemaRef(
+        schema,
+        rootSchema,
+        maxDepth,
+        new Set()
+      );
+    }
+  }
 
   const type = getSchemaType(resolvedSchema);
 
@@ -376,13 +423,21 @@ export function traverseSchemaForFields(
         return callback(resolvedSchema, path, parentSchema, parentKey);
       }
 
+      // Call callback for the object itself first
+      const objectResult = callback(
+        resolvedSchema,
+        path,
+        parentSchema,
+        parentKey
+      );
+
       if (resolvedSchema.properties) {
         const result: Record<string, any> = {};
 
         Object.entries(resolvedSchema.properties).forEach(
           ([key, propSchema]) => {
             const newPath = [...path, key];
-            result[key] = traverseSchemaForFields(
+            result[key] = traverseSchemaForFieldsInternal(
               propSchema,
               callback,
               { ...options, maxDepth: maxDepth - 1 },
@@ -390,7 +445,7 @@ export function traverseSchemaForFields(
               newPath,
               resolvedSchema,
               key,
-              visited
+              newDefChain // Pass the updated defChain to continue tracking in this branch
             );
           }
         );
@@ -398,7 +453,7 @@ export function traverseSchemaForFields(
         return result;
       }
 
-      return callback(resolvedSchema, path, parentSchema, parentKey);
+      return objectResult;
 
     case "array":
       if (!includeArrays) {
@@ -410,7 +465,7 @@ export function traverseSchemaForFields(
           // Tuple array - process each item
           return resolvedSchema.items.map((item, index) => {
             const newPath = [...path, index.toString()];
-            return traverseSchemaForFields(
+            return traverseSchemaForFieldsInternal(
               item,
               callback,
               { ...options, maxDepth: maxDepth - 1 },
@@ -418,12 +473,21 @@ export function traverseSchemaForFields(
               newPath,
               resolvedSchema,
               index.toString(),
-              visited
+              newDefChain // Pass the updated defChain to continue tracking in this branch
             );
           });
         } else {
-          // Regular array - return empty array (items added dynamically)
-          return [];
+          // Regular array - process the items schema directly
+          return traverseSchemaForFieldsInternal(
+            resolvedSchema.items,
+            callback,
+            { ...options, maxDepth: maxDepth - 1 },
+            rootSchema,
+            path, // Don't add "items" to the path for regular arrays
+            resolvedSchema,
+            parentKey,
+            newDefChain // Pass the updated defChain to continue tracking in this branch
+          );
         }
       }
 

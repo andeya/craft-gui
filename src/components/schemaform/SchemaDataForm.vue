@@ -184,8 +184,8 @@
                       : () => false
                   "
                   :compact="compactMode"
-                  :field-key="fieldInfo.key"
-                  :columns="getFieldColumnsLocal(fieldInfo.key)"
+                  :field-path="fieldInfo.fieldPath"
+                  :columns="getFieldColumnsLocal(fieldInfo)"
                   @update:model-value="updateFormData(fieldInfo.key, $event)"
                   @validation-error="
                     handleValidationError(fieldInfo.key, $event)
@@ -264,11 +264,13 @@ import { initializeSchemaData, resolveSchemaRef } from "@/utils/schema-utils";
 import type { FieldLayoutConfig } from "./types";
 import {
   getFieldLayout,
-  getRootLayout,
-  getFieldColumns,
-  getFieldSpan,
+  // getRootLayout,
+  // getFieldColumns,
+  // getFieldSpan,
   getRootColumns,
+  getFieldLayoutWithRef,
 } from "./layout-utils";
+import { fieldPathResolver } from "./ref-path-resolver";
 
 // Type definitions
 interface SchemaOption {
@@ -414,7 +416,7 @@ const canCreate = computed(() => {
   );
 });
 
-// Generate field infos using schema traversal
+// Generate field infos using schema traversal with path resolution
 const schemaFieldInfos = computed(() => {
   if (!schema.value) return [];
 
@@ -422,6 +424,9 @@ const schemaFieldInfos = computed(() => {
     key: string;
     schema: AppSchema;
     value: any;
+    fieldPath: string;
+    isRefField: boolean;
+    refPath?: string;
   }> = [];
 
   // For form fields, we need to traverse the schema properties directly
@@ -430,10 +435,21 @@ const schemaFieldInfos = computed(() => {
       // Resolve $ref references for the property schema
       const resolvedSchema = resolveSchemaRef(propSchema, schema.value!);
 
+      // Resolve field path with $ref context
+      const resolvedInfo = fieldPathResolver.resolveFieldPath(
+        key,
+        "",
+        propSchema,
+        schema.value!
+      );
+
       fieldInfos.push({
         key,
         schema: resolvedSchema,
         value: formData.value[key],
+        fieldPath: resolvedInfo.fieldPath,
+        isRefField: resolvedInfo.isRefField,
+        refPath: resolvedInfo.refPath,
       });
     });
   }
@@ -442,14 +458,37 @@ const schemaFieldInfos = computed(() => {
 });
 
 // ===== Field Layout Functions =====
-// Layout utility functions using shared implementation
-const getFieldLayoutLocal = (fieldKey: string) =>
-  getFieldLayout(fieldKey, props.fieldLayoutConfig);
-const getRootLayoutLocal = () => getRootLayout(props.fieldLayoutConfig);
-const getFieldColumnsLocal = (fieldKey: string) =>
-  getFieldColumns(fieldKey, props.fieldLayoutConfig, props.columns);
-const getFieldSpanLocal = (fieldKey: string) =>
-  getFieldSpan(fieldKey, props.fieldLayoutConfig);
+// Layout utility functions using shared implementation with $ref support
+const getFieldLayoutLocal = (fieldInfo: any) => {
+  if (fieldInfo.isRefField && fieldInfo.refPath) {
+    // Use $ref-aware layout resolution
+    const resolvedInfo = {
+      fieldPath: fieldInfo.fieldPath,
+      parentPath: fieldInfo.key,
+      fieldName: fieldInfo.key,
+      isRefField: fieldInfo.isRefField,
+      refPath: fieldInfo.refPath,
+      schema: fieldInfo.schema,
+    };
+    return getFieldLayoutWithRef(resolvedInfo, props.fieldLayoutConfig);
+  } else {
+    // Use standard path-based resolution
+    return getFieldLayout(fieldInfo.fieldPath, props.fieldLayoutConfig);
+  }
+};
+
+// const getRootLayoutLocal = () => getRootLayout(props.fieldLayoutConfig);
+
+const getFieldColumnsLocal = (fieldInfo: any) => {
+  const layout = getFieldLayoutLocal(fieldInfo);
+  return layout?.columns ?? props.columns;
+};
+
+const getFieldSpanLocal = (fieldInfo: any) => {
+  const layout = getFieldLayoutLocal(fieldInfo);
+  return layout?.span ?? 1;
+};
+
 const getRootColumnsLocal = () =>
   getRootColumns(props.fieldLayoutConfig, props.columns);
 

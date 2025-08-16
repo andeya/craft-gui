@@ -41,9 +41,9 @@ Both `SchemaApiForm` and `SchemaDataForm` support the `fieldLayoutConfig` prop:
 
 ```typescript
 interface FieldLayoutConfig {
-  fieldKey?: string; // undefined for first-level fields
-  columns: number; // Number of columns for sub-fields
-  span?: number; // Grid span for this field (optional)
+  fieldPath?: string; // Field path (e.g., "user.name", "profile.email") - undefined for root level
+  columns: number; // Number of columns for sub-fields of this field
+  span?: number; // Number of columns this field spans in the grid (optional)
 }
 ```
 
@@ -52,14 +52,34 @@ interface FieldLayoutConfig {
 ```vue
 <SchemaApiForm
   :schema-id="'MySchema'"
-  :columns="2"
+  :columns="3"
   :field-layout-config="[
-    { fieldKey: undefined, columns: 2 }, // First level: 2 columns
-    { fieldKey: 'complexField', columns: 3, span: 2 }, // Complex field: 3 columns, spans 2
-    { fieldKey: 'simpleField', columns: 1, span: 1 }, // Simple field: 1 column, spans 1
+    { fieldPath: undefined, columns: 3 }, // First level: 3 columns
+    { fieldPath: 'complexField', columns: 3, span: 2 }, // Complex field: 3 columns, spans 2
+    { fieldPath: 'simpleField', columns: 1, span: 1 }, // Simple field: 1 column, spans 1
   ]"
   @submit="handleSubmit"
 />
+```
+
+### Layout Validation
+
+The system validates that field spans don't exceed the root container columns:
+
+```typescript
+// ✅ Valid: Total spans (2+1=3) ≤ Root columns (3)
+[
+  { fieldPath: undefined, columns: 3 },
+  { fieldPath: 'field1', span: 2 }, // 2 columns
+  { fieldPath: 'field2', span: 1 }, // 1 column
+]
+
+// ❌ Invalid: Total spans (2+1=3) > Root columns (2)
+[
+  { fieldPath: undefined, columns: 2 },
+  { fieldPath: 'field1', span: 2 }, // 2 columns
+  { fieldPath: 'field2', span: 1 }, // 1 column
+]
 ```
 
 ### Layout Logic
@@ -118,7 +138,7 @@ Shared CSS for consistent styling:
 
 ## Best Practices
 
-1. **Use `undefined` for root level**: `fieldKey: undefined` for first-level fields
+1. **Use `undefined` for root level**: `fieldPath: undefined` for first-level fields
 2. **Balance column counts**: Ensure total spans don't exceed available columns
 3. **Mobile-first design**: Always test responsive behavior
 4. **Consistent naming**: Use descriptive field keys in configuration
