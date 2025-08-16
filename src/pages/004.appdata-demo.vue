@@ -312,6 +312,7 @@ import { useQuasar } from "quasar";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 import SchemaApiForm from "@/components/schemaform/SchemaApiForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
+import type { FormData } from "@/components/schemaform/types";
 
 const $q = useQuasar();
 
@@ -401,11 +402,14 @@ const resetApiForm = () => {
   addEventLog(`🔄 API Form reset`);
 };
 
-const handleApiSubmit = (data: Record<string, any>) => {
-  addEventLog(`🚀 API Form submitted: ${JSON.stringify(data, null, 2)}`);
+const handleApiSubmit = (
+  formData: FormData,
+  callback?: (success: boolean, message?: string) => void
+) => {
+  addEventLog(`🚀 API Form submitted: ${JSON.stringify(formData, null, 2)}`);
   // Simulate API call delay
   setTimeout(() => {
-    addEventLog(`✅ API call completed successfully`);
+    callback?.(true, `✅ API call completed successfully`);
   }, 1000);
 };
 

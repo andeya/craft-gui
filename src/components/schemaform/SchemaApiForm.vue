@@ -180,6 +180,17 @@ import type {
   SchemaApiFormProps,
   SchemaApiFormEmits,
 } from "./types";
+import {
+  initializeSchemaData,
+  validateSchemaData,
+} from "../../utils/schema-utils";
+
+// Constants
+const MAX_DEPTH = 10;
+const NOTIFICATION_TIMEOUT = {
+  SUCCESS: 3000,
+  ERROR: 5000,
+};
 
 const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   modelValue: () => ({}),
@@ -199,6 +210,7 @@ const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   labelWidth: "120px",
   labelPosition: "left",
   size: "medium",
+  showSuccessNotification: true,
 });
 
 const emit = defineEmits<SchemaApiFormEmits>();
@@ -223,7 +235,6 @@ const canSubmit = computed((): boolean => {
   );
 });
 
-// Helper function to get invoke command
 const getInvokeCommand = (command: string): string => {
   switch (command) {
     case "get_schema":
@@ -247,16 +258,18 @@ const loadSchema = async (): Promise<void> => {
   try {
     const command = getInvokeCommand("get_schema");
     console.log(`[SchemaApiForm] Loading schema: ${props.schemaId}`);
+
     const schemaData = await invoke(command, {
       schemaId: props.schemaId,
     });
 
-    console.log(`[SchemaApiForm] Schema loaded:`, schemaData);
+    console.log(
+      `[SchemaApiForm] Schema loaded:`,
+      JSON.parse(JSON.stringify(schemaData))
+    );
+
     schema.value = schemaData as AppSchema;
-
-    // Initialize form data with schema defaults
     initializeFormData();
-
     emit("schema-loaded", schema.value);
   } catch (err) {
     error.value = `Failed to load schema: ${err}`;
@@ -274,14 +287,12 @@ const initializeFormData = (): void => {
     return;
   }
 
-  const defaultData: FormData = {};
-
-  // Set default values from schema
-  Object.entries(schema.value.properties).forEach(([key, prop]) => {
-    if (prop.default !== undefined) {
-      defaultData[key] = prop.default;
-    }
-  });
+  // Initialize all fields from schema with recursive support and $ref resolution
+  const defaultData = initializeSchemaData(
+    schema.value,
+    schema.value,
+    MAX_DEPTH
+  );
 
   // Merge with initial data (initial data takes precedence)
   formData.value = { ...defaultData, ...props.initialData };
@@ -292,6 +303,7 @@ const isFieldModified = (fieldPath: string): boolean => {
   const currentValue = formData.value[fieldPath];
   const originalValue = originalData.value[fieldPath];
 
+  // Skip object comparison for nested objects (handled by isNestedFieldModified)
   if (
     typeof currentValue === "object" &&
     currentValue !== null &&
@@ -311,6 +323,7 @@ const isNestedFieldModified = (
   const originalParent = originalData.value[parentKey] || {};
   const currentValue = currentParent[childKey];
   const originalValue = originalParent[childKey];
+
   return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
 };
 
@@ -318,13 +331,27 @@ const handleFieldUpdate = (key: string, value: any): void => {
   formData.value[key] = value;
 };
 
+const showNotification = (
+  type: "positive" | "negative",
+  message: string
+): void => {
+  $q.notify({
+    type,
+    message,
+    position: "top",
+    timeout:
+      type === "positive"
+        ? NOTIFICATION_TIMEOUT.SUCCESS
+        : NOTIFICATION_TIMEOUT.ERROR,
+  });
+};
+
 const handleValidationError = (_error: string): void => {
-  // This will be handled by individual SchemaField components
-  // The validation errors are collected in the validationErrors Map
+  // Handled by individual SchemaField components
 };
 
 const handleValidationSuccess = (): void => {
-  // This will be handled by individual SchemaField components
+  // Handled by individual SchemaField components
 };
 
 const validateForm = (): boolean => {
@@ -334,60 +361,27 @@ const validateForm = (): boolean => {
     return true;
   }
 
-  let isValid = true;
+  const validationResult = validateSchemaData(
+    formData.value,
+    schema.value,
+    schema.value,
+    MAX_DEPTH
+  );
 
-  Object.entries(schema.value.properties).forEach(([key, prop]) => {
-    const value = formData.value[key];
+  if (!validationResult.valid) {
+    // Convert errors array to Map for compatibility
+    validationResult.errors.forEach((error) => {
+      const match = error.match(/Field '([^']+)'/);
+      const fieldName = match ? match[1] : "unknown";
+      validationErrors.value.set(fieldName, error);
+    });
 
-    // Required field validation
-    if (
-      prop.required &&
-      (value === null || value === undefined || value === "")
-    ) {
-      validationErrors.value.set(key, "This field is required");
-      isValid = false;
-      return;
-    }
-
-    // Skip validation for empty optional fields
-    if (value === null || value === undefined || value === "") {
-      return;
-    }
-
-    // Type-specific validation
-    if (prop.type === "string" && typeof value === "string") {
-      if (prop.minLength !== undefined && value.length < prop.minLength) {
-        validationErrors.value.set(key, `Minimum length is ${prop.minLength}`);
-        isValid = false;
-      }
-      if (prop.maxLength !== undefined && value.length > prop.maxLength) {
-        validationErrors.value.set(key, `Maximum length is ${prop.maxLength}`);
-        isValid = false;
-      }
-    }
-
-    if (
-      (prop.type === "integer" || prop.type === "number") &&
-      typeof value === "number"
-    ) {
-      if (prop.minimum !== undefined && value < prop.minimum) {
-        validationErrors.value.set(key, `Minimum value is ${prop.minimum}`);
-        isValid = false;
-      }
-      if (prop.maximum !== undefined && value > prop.maximum) {
-        validationErrors.value.set(key, `Maximum value is ${prop.maximum}`);
-        isValid = false;
-      }
-    }
-  });
-
-  if (!isValid) {
     emit("validation-error", validationErrors.value);
-  } else {
-    emit("validation-success");
+    return false;
   }
 
-  return isValid;
+  emit("validation-success");
+  return true;
 };
 
 const handleSubmit = async (): Promise<void> => {
@@ -398,30 +392,24 @@ const handleSubmit = async (): Promise<void> => {
   submitting.value = true;
 
   try {
-    console.log("[SchemaApiForm] Submitting form data:", formData.value);
+    console.log(
+      "[SchemaApiForm] Submitting form data:",
+      JSON.stringify(formData.value, null, 2)
+    );
 
-    // Emit submit event for parent component to handle
-    emit("submit", formData.value);
-
-    // Show success notification
-    $q.notify({
-      type: "positive",
-      message: "Form submitted successfully",
-      position: "top",
-      timeout: 3000,
+    // Emit submit event with callback for result
+    emit("submit", formData.value, (success: boolean, message?: string) => {
+      if (success && props.showSuccessNotification) {
+        showNotification("positive", message || "Form submitted successfully");
+      } else if (!success && message) {
+        showNotification("negative", message);
+      }
+      submitting.value = false;
     });
   } catch (err) {
     const errorMessage = `Submit failed: ${err}`;
     console.error("[SchemaApiForm] Submit error:", err);
-
-    // Show error notification
-    $q.notify({
-      type: "negative",
-      message: errorMessage,
-      position: "top",
-      timeout: 5000,
-    });
-  } finally {
+    showNotification("negative", errorMessage);
     submitting.value = false;
   }
 };

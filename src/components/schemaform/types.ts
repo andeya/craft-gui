@@ -62,12 +62,18 @@ export interface SchemaApiFormProps {
   labelWidth?: string;
   labelPosition?: "left" | "top" | "right";
   size?: "small" | "medium" | "large";
+
+  // Notification control
+  showSuccessNotification?: boolean;
 }
 
 export interface SchemaApiFormEmits {
   // Standard form events
   "update:model-value": [data: FormData];
-  submit: [data: FormData];
+  submit: [
+    data: FormData,
+    callback: (success: boolean, message?: string) => void
+  ];
   cancel: [];
 
   // Validation events

@@ -134,6 +134,7 @@ import type {
   SchemaFieldProps,
   SchemaFieldEmits,
 } from "./types";
+import { resolveSchemaRef, getSchemaType } from "../../utils/schema-utils";
 
 const props = withDefaults(defineProps<SchemaFieldProps>(), {
   rootSchema: null,
@@ -153,18 +154,9 @@ const validationError = ref("");
 
 // Computed properties
 const resolvedSchema = computed((): AppSchema => {
-  // Resolve $ref references
+  // Resolve $ref references using utility function
   if (props.schema && props.rootSchema) {
-    if (props.schema.$ref) {
-      const refPath = props.schema.$ref;
-      if (refPath.startsWith("#/$defs/")) {
-        const defName = refPath.substring(8);
-        const resolved = props.rootSchema.$defs?.[defName];
-        if (resolved) {
-          return { ...resolved, ...props.schema };
-        }
-      }
-    }
+    return resolveSchemaRef(props.schema, props.rootSchema);
   }
   return props.schema;
 });
@@ -277,12 +269,8 @@ const convertValueToSchemaType = (value: any, schemaType: string): any => {
   }
 };
 
-const getSchemaType = (): string => {
-  const type = resolvedSchema.value.type;
-  if (Array.isArray(type)) {
-    return type[0] || "string";
-  }
-  return type || "string";
+const getCurrentSchemaType = (): string => {
+  return getSchemaType(resolvedSchema.value);
 };
 
 // Validation rules
@@ -418,7 +406,7 @@ const validateField = (): boolean => {
 
 // Value change handlers
 const handleValueChange = (value: FieldValue): void => {
-  const schemaType = getSchemaType();
+  const schemaType = getCurrentSchemaType();
   const processedValue = convertValueToSchemaType(value, schemaType);
 
   internalValue.value = processedValue;

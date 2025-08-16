@@ -1,0 +1,497 @@
+import type { AppSchema } from "../types/schema";
+
+/**
+ * Schema traversal callback function type
+ */
+export type SchemaTraversalCallback = (
+  schema: AppSchema,
+  path: string[],
+  parentSchema?: AppSchema,
+  parentKey?: string
+) => any;
+
+/**
+ * Schema traversal options
+ */
+export interface SchemaTraversalOptions {
+  maxDepth?: number;
+  resolveRefs?: boolean;
+  includeArrays?: boolean;
+  includeObjects?: boolean;
+  includePrimitives?: boolean;
+}
+
+/**
+ * Resolve $ref references in schema (recursive)
+ */
+export function resolveSchemaRef(
+  schema: AppSchema,
+  rootSchema: AppSchema,
+  maxDepth: number = 10,
+  visited: Set<string> = new Set()
+): AppSchema {
+  if (!schema.$ref || !rootSchema || maxDepth <= 0) {
+    return schema;
+  }
+
+  const refPath = schema.$ref;
+
+  // Debug logging in development
+  if (import.meta.env.DEV) {
+    console.log(`[resolveSchemaRef] Resolving: ${refPath}`);
+    console.log(
+      `[resolveSchemaRef] Root schema keys:`,
+      Object.keys(rootSchema)
+    );
+    console.log(
+      `[resolveSchemaRef] $defs keys:`,
+      Object.keys(rootSchema.$defs || {})
+    );
+  }
+
+  // Prevent circular references
+  if (visited.has(refPath)) {
+    console.warn(`Circular reference detected: ${refPath}`);
+    return schema;
+  }
+
+  visited.add(refPath);
+
+  let resolved: AppSchema | undefined;
+
+  // Handle #/$defs/ references
+  if (refPath.startsWith("#/$defs/")) {
+    const defName = refPath.substring(8);
+    resolved = rootSchema.$defs?.[defName];
+  }
+
+  // Handle #/properties/ references
+  if (refPath.startsWith("#/properties/")) {
+    const propPath = refPath.substring(13);
+    const props = propPath.split("/");
+    let current = rootSchema;
+
+    for (const prop of props) {
+      if (current.properties && current.properties[prop]) {
+        current = current.properties[prop];
+      } else {
+        resolved = undefined;
+        break;
+      }
+    }
+
+    if (current !== rootSchema) {
+      resolved = current;
+    }
+  }
+
+  if (resolved) {
+    // Debug logging in development
+    if (import.meta.env.DEV) {
+      console.log(`[resolveSchemaRef] Successfully resolved: ${refPath}`);
+      console.log(`[resolveSchemaRef] Resolved schema:`, resolved);
+    }
+
+    // Merge the resolved schema with the original schema
+    const mergedSchema = { ...resolved, ...schema };
+
+    // Recursively resolve any nested $ref in the resolved schema
+    return resolveSchemaRef(mergedSchema, rootSchema, maxDepth - 1, visited);
+  }
+
+  // Debug logging for unresolved references
+  if (import.meta.env.DEV) {
+    console.warn(`[resolveSchemaRef] Failed to resolve: ${refPath}`);
+  }
+
+  return schema;
+}
+
+/**
+ * Get schema type (handles array types)
+ */
+export function getSchemaType(schema: AppSchema): string {
+  const type = schema.type;
+  if (Array.isArray(type)) {
+    return type[0] || "string";
+  }
+  return type || "string";
+}
+
+/**
+ * Check if schema is a primitive type
+ */
+export function isPrimitiveType(schema: AppSchema): boolean {
+  const type = getSchemaType(schema);
+  return ["string", "integer", "number", "boolean", "null"].includes(type);
+}
+
+/**
+ * Check if schema is an object type
+ */
+export function isObjectType(schema: AppSchema): boolean {
+  return getSchemaType(schema) === "object";
+}
+
+/**
+ * Check if schema is an array type
+ */
+export function isArrayType(schema: AppSchema): boolean {
+  return getSchemaType(schema) === "array";
+}
+
+/**
+ * Generic schema traversal function
+ * Supports recursion, $ref resolution, and custom callback processing
+ */
+export function traverseSchema(
+  schema: AppSchema,
+  callback: SchemaTraversalCallback,
+  options: SchemaTraversalOptions = {},
+  rootSchema?: AppSchema,
+  path: string[] = [],
+  parentSchema?: AppSchema,
+  parentKey?: string,
+  visited: Set<string> = new Set()
+): any {
+  const {
+    maxDepth = 10,
+    resolveRefs = true,
+    includeArrays = true,
+    includeObjects = true,
+    includePrimitives = true,
+  } = options;
+
+  // Check depth limit
+  if (maxDepth <= 0) {
+    return callback(schema, path, parentSchema, parentKey);
+  }
+
+  // Create a unique identifier for this schema node to detect cycles
+  const nodeId = path.length > 0 ? path.join(".") : "root";
+
+  // Check for circular references
+  if (visited.has(nodeId)) {
+    console.warn(
+      `Circular reference detected in schema traversal at path: ${nodeId}`
+    );
+    return callback(schema, path, parentSchema, parentKey);
+  }
+
+  // Add current node to visited set
+  visited.add(nodeId);
+
+  // Resolve $ref references if enabled
+  const resolvedSchema =
+    resolveRefs && rootSchema ? resolveSchemaRef(schema, rootSchema) : schema;
+
+  const type = getSchemaType(resolvedSchema);
+
+  // Handle different schema types
+  switch (type) {
+    case "object":
+      if (!includeObjects) {
+        return callback(resolvedSchema, path, parentSchema, parentKey);
+      }
+
+      if (resolvedSchema.properties) {
+        const result: Record<string, any> = {};
+
+        Object.entries(resolvedSchema.properties).forEach(
+          ([key, propSchema]) => {
+            const newPath = [...path, key];
+            result[key] = traverseSchema(
+              propSchema,
+              callback,
+              { ...options, maxDepth: maxDepth - 1 },
+              rootSchema,
+              newPath,
+              resolvedSchema,
+              key,
+              visited
+            );
+          }
+        );
+
+        return result;
+      }
+
+      return callback(resolvedSchema, path, parentSchema, parentKey);
+
+    case "array":
+      if (!includeArrays) {
+        return callback(resolvedSchema, path, parentSchema, parentKey);
+      }
+
+      if (resolvedSchema.items && maxDepth > 0) {
+        if (Array.isArray(resolvedSchema.items)) {
+          // Tuple array - process each item
+          return resolvedSchema.items.map((item, index) => {
+            const newPath = [...path, index.toString()];
+            return traverseSchema(
+              item,
+              callback,
+              { ...options, maxDepth: maxDepth - 1 },
+              rootSchema,
+              newPath,
+              resolvedSchema,
+              index.toString(),
+              visited
+            );
+          });
+        } else {
+          // Regular array - return empty array (items added dynamically)
+          return [];
+        }
+      }
+
+      return callback(resolvedSchema, path, parentSchema, parentKey);
+
+    default:
+      // Primitive types
+      if (!includePrimitives) {
+        return callback(resolvedSchema, path, parentSchema, parentKey);
+      }
+
+      return callback(resolvedSchema, path, parentSchema, parentKey);
+  }
+}
+
+/**
+ * Get zero value based on schema type
+ */
+export function getSchemaZeroValue(schema: AppSchema): any {
+  const type = getSchemaType(schema);
+
+  switch (type) {
+    case "string":
+      return "";
+    case "integer":
+    case "number":
+      return 0;
+    case "boolean":
+      return false;
+    case "null":
+      return null;
+    case "array":
+      return [];
+    case "object":
+      return {};
+    default:
+      return "";
+  }
+}
+
+/**
+ * Initialize schema data with defaults and zero values
+ */
+export function initializeSchemaData(
+  schema: AppSchema,
+  rootSchema?: AppSchema,
+  maxDepth: number = 10
+): any {
+  return traverseSchema(
+    schema,
+    (currentSchema) => {
+      // Use default value if available, otherwise use zero value
+      if (currentSchema.default !== undefined) {
+        return currentSchema.default;
+      } else {
+        return getSchemaZeroValue(currentSchema);
+      }
+    },
+    {
+      maxDepth,
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    rootSchema
+  );
+}
+
+/**
+ * Get all field paths from schema
+ */
+export function getSchemaFieldPaths(
+  schema: AppSchema,
+  rootSchema?: AppSchema,
+  maxDepth: number = 10
+): string[][] {
+  const paths: string[][] = [];
+
+  traverseSchema(
+    schema,
+    (currentSchema, path) => {
+      if (isPrimitiveType(currentSchema)) {
+        paths.push([...path]);
+      }
+      return null; // We don't care about the return value here
+    },
+    {
+      maxDepth,
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    rootSchema
+  );
+
+  return paths;
+}
+
+/**
+ * Validate schema data against schema definition
+ */
+export function validateSchemaData(
+  data: any,
+  schema: AppSchema,
+  rootSchema?: AppSchema,
+  maxDepth: number = 10
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  traverseSchema(
+    schema,
+    (currentSchema, path) => {
+      const fieldPath = path.join(".");
+      const value = getNestedValue(data, path);
+
+      // Required field validation
+      if (
+        currentSchema.required &&
+        (value === null || value === undefined || value === "")
+      ) {
+        errors.push(`Field '${fieldPath}' is required`);
+        return;
+      }
+
+      // Skip validation for empty optional fields
+      if (value === null || value === undefined || value === "") {
+        return;
+      }
+
+      // Type-specific validation
+      const type = getSchemaType(currentSchema);
+
+      if (type === "string" && typeof value === "string") {
+        if (
+          currentSchema.minLength !== undefined &&
+          value.length < currentSchema.minLength
+        ) {
+          errors.push(
+            `Field '${fieldPath}' minimum length is ${currentSchema.minLength}`
+          );
+        }
+        if (
+          currentSchema.maxLength !== undefined &&
+          value.length > currentSchema.maxLength
+        ) {
+          errors.push(
+            `Field '${fieldPath}' maximum length is ${currentSchema.maxLength}`
+          );
+        }
+      }
+
+      if (
+        (type === "integer" || type === "number") &&
+        typeof value === "number"
+      ) {
+        if (
+          currentSchema.minimum !== undefined &&
+          value < currentSchema.minimum
+        ) {
+          errors.push(
+            `Field '${fieldPath}' minimum value is ${currentSchema.minimum}`
+          );
+        }
+        if (
+          currentSchema.maximum !== undefined &&
+          value > currentSchema.maximum
+        ) {
+          errors.push(
+            `Field '${fieldPath}' maximum value is ${currentSchema.maximum}`
+          );
+        }
+      }
+
+      return null; // We don't care about the return value here
+    },
+    {
+      maxDepth,
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    rootSchema
+  );
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Get nested value from object using path array
+ */
+function getNestedValue(obj: any, path: string[]): any {
+  let current = obj;
+
+  for (const key of path) {
+    if (current && typeof current === "object" && key in current) {
+      current = current[key];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
+}
+
+/**
+ * Set nested value in object using path array
+ */
+export function setNestedValue(obj: any, path: string[], value: any): void {
+  let current = obj;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const key = path[i];
+    if (!(key in current) || typeof current[key] !== "object") {
+      current[key] = {};
+    }
+    current = current[key];
+  }
+
+  current[path[path.length - 1]] = value;
+}
+
+/**
+ * Flatten schema to key-value pairs
+ */
+export function flattenSchema(
+  schema: AppSchema,
+  rootSchema?: AppSchema,
+  maxDepth: number = 10
+): Record<string, AppSchema> {
+  const flattened: Record<string, AppSchema> = {};
+
+  traverseSchema(
+    schema,
+    (currentSchema, path) => {
+      const key = path.join(".");
+      flattened[key] = currentSchema;
+      return null; // We don't care about the return value here
+    },
+    {
+      maxDepth,
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    rootSchema
+  );
+
+  return flattened;
+}
