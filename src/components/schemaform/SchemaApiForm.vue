@@ -14,11 +14,11 @@
     <div v-else-if="error" class="error-container">
       <QCard class="error-card">
         <QCardSection class="q-pa-md">
-          <div class="row items-center q-col-gutter-sm">
-            <QIcon name="error" color="negative" size="1.5em" />
+          <div class="row items-start q-col-gutter-sm">
+            <QIcon name="error" color="negative" size="1.5em" class="q-mt-xs" />
             <div class="col">
               <div class="text-h6 text-negative">Schema Load Error</div>
-              <div class="text-body2">{{ error }}</div>
+              <div class="text-body2 error-message">{{ error }}</div>
             </div>
           </div>
         </QCardSection>
@@ -72,9 +72,17 @@
                   :schema="prop"
                   :root-schema="schema"
                   :model-value="formData[key]"
-                  :is-modified="isFieldModified(key)"
+                  :is-modified="
+                    props.showModificationIndicator
+                      ? isFieldModified(key)
+                      : false
+                  "
                   :parent-key="key"
-                  :check-nested-modification="isNestedFieldModified"
+                  :check-nested-modification="
+                    props.showModificationIndicator
+                      ? isNestedFieldModified
+                      : () => false
+                  "
                   :compact="compactMode"
                   :field-key="key"
                   @update:model-value="handleFieldUpdate(key, $event)"
@@ -129,22 +137,29 @@
       <div v-if="validationErrors.size > 0" class="validation-summary q-mt-md">
         <QCard class="validation-card">
           <QCardSection class="q-pa-md">
-            <div class="row items-center q-col-gutter-sm">
-              <QIcon name="warning" color="warning" size="1.5em" />
+            <div class="row items-start q-col-gutter-sm">
+              <QIcon
+                name="warning"
+                color="warning"
+                size="1.5em"
+                class="q-mt-xs"
+              />
               <div class="col">
                 <div class="text-h6 text-warning">Validation Errors</div>
                 <div class="text-body2">
                   Please fix the following errors before submitting:
                 </div>
-                <ul class="q-mt-sm q-mb-none">
-                  <li
-                    v-for="(error, field) in validationErrors"
-                    :key="field"
-                    class="text-body2"
-                  >
-                    <strong>{{ field }}:</strong> {{ error }}
-                  </li>
-                </ul>
+                <div class="validation-errors-list q-mt-sm">
+                  <ul class="q-mb-none">
+                    <li
+                      v-for="(error, field) in validationErrors"
+                      :key="field"
+                      class="text-body2"
+                    >
+                      <strong>{{ field }}:</strong> {{ error }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </QCardSection>
@@ -211,6 +226,8 @@ const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   labelPosition: "left",
   size: "medium",
   showSuccessNotification: true,
+  maxHeight: "70vh", // Maximum height for the form container
+  showModificationIndicator: false, // Show modification indicators
 });
 
 const emit = defineEmits<SchemaApiFormEmits>();
@@ -343,6 +360,8 @@ const showNotification = (
       type === "positive"
         ? NOTIFICATION_TIMEOUT.SUCCESS
         : NOTIFICATION_TIMEOUT.ERROR,
+    html: true,
+    classes: "smart-notification",
   });
 };
 
@@ -487,6 +506,47 @@ defineExpose({
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.error-message {
+  max-height: 150px;
+  overflow-y: auto;
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 67, 54, 0.3) transparent;
+}
+
+.error-message::-webkit-scrollbar {
+  width: 4px;
+}
+
+.error-message::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.error-message::-webkit-scrollbar-thumb {
+  background-color: rgba(244, 67, 54, 0.3);
+  border-radius: 2px;
+}
+
+.error-message::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(244, 67, 54, 0.5);
+}
+
+/* Smart notification styles - universal for all notification types */
+:global(.smart-notification) {
+  max-width: 90vw !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+}
+
+:global(.smart-notification .q-notification__message) {
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+  padding: 8px 0 !important;
+}
+
 .form-header {
   margin-bottom: 1rem;
 }
@@ -498,6 +558,27 @@ defineExpose({
 
 .form-content {
   width: 100%;
+  max-height: v-bind("props.maxHeight");
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+.form-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form-content::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.form-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .form-fields {
@@ -508,6 +589,8 @@ defineExpose({
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .validation-summary {
@@ -534,11 +617,57 @@ defineExpose({
   border-bottom: none;
 }
 
+.validation-errors-list {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 152, 0, 0.3) transparent;
+}
+
+.validation-errors-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.validation-errors-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.validation-errors-list::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 152, 0, 0.3);
+  border-radius: 2px;
+}
+
+.validation-errors-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 152, 0, 0.5);
+}
+
 /* Fields container layout */
 .fields-container {
   display: grid;
   gap: 8px;
   width: 100%;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.fields-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.fields-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fields-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.fields-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .fields-container.columns-0 {

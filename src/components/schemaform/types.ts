@@ -65,6 +65,12 @@ export interface SchemaApiFormProps {
 
   // Notification control
   showSuccessNotification?: boolean;
+
+  // Container styling
+  maxHeight?: string;
+
+  // Modification tracking
+  showModificationIndicator?: boolean;
 }
 
 export interface SchemaApiFormEmits {

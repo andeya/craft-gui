@@ -160,9 +160,15 @@
                 :schema="schema!.properties![key]"
                 :root-schema="schema"
                 :model-value="formData[key]"
-                :is-modified="isFieldModified(key)"
+                :is-modified="
+                  props.showModificationIndicator ? isFieldModified(key) : false
+                "
                 :parent-key="key"
-                :check-nested-modification="isNestedFieldModified"
+                :check-nested-modification="
+                  props.showModificationIndicator
+                    ? isNestedFieldModified
+                    : () => false
+                "
                 :compact="compactMode"
                 :field-key="key"
                 @update:model-value="updateFormData(key, $event)"
@@ -270,6 +276,9 @@ interface Props {
 
   mode?: "appdata" | "config";
   showDiffBeforeSave?: "json" | "toml" | ((obj: object) => string);
+
+  // Modification tracking
+  showModificationIndicator?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -287,6 +296,7 @@ const props = withDefaults(defineProps<Props>(), {
   availableSchemas: () => [],
   mode: "appdata",
   showDiffBeforeSave: undefined,
+  showModificationIndicator: true, // Show modification indicators
 });
 
 const emit = defineEmits([
