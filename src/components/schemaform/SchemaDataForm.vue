@@ -155,25 +155,27 @@
             </div>
             <div class="fields-container" :class="`columns-${columns}`">
               <SchemaField
-                v-for="key in Object.keys(schema?.properties || {})"
-                :key="key"
-                :schema="schema!.properties![key]"
+                v-for="fieldInfo in schemaFieldInfos"
+                :key="fieldInfo.key"
+                :schema="fieldInfo.schema"
                 :root-schema="schema"
-                :model-value="formData[key]"
+                :model-value="fieldInfo.value"
                 :is-modified="
-                  props.showModificationIndicator ? isFieldModified(key) : false
+                  props.showModificationIndicator
+                    ? isFieldModified(fieldInfo.key)
+                    : false
                 "
-                :parent-key="key"
+                :parent-key="fieldInfo.key"
                 :check-nested-modification="
                   props.showModificationIndicator
                     ? isNestedFieldModified
                     : () => false
                 "
                 :compact="compactMode"
-                :field-key="key"
-                @update:model-value="updateFormData(key, $event)"
-                @validation-error="handleValidationError(key, $event)"
-                @validation-success="handleValidationSuccess(key)"
+                :field-key="fieldInfo.key"
+                @update:model-value="updateFormData(fieldInfo.key, $event)"
+                @validation-error="handleValidationError(fieldInfo.key, $event)"
+                @validation-success="handleValidationSuccess(fieldInfo.key)"
               />
             </div>
           </QCardSection>
@@ -242,6 +244,10 @@ import {
   getErrorMessage,
   UI_MESSAGES,
 } from "@/utils/ui-constants";
+import {
+  initializeSchemaData,
+  traverseSchemaForFields,
+} from "@/utils/schema-utils";
 
 // Type definitions
 interface SchemaOption {
@@ -383,6 +389,43 @@ const canCreate = computed(() => {
   );
 });
 
+// Generate field infos using schema traversal
+const schemaFieldInfos = computed(() => {
+  if (!schema.value) return [];
+
+  const fieldInfos: Array<{
+    key: string;
+    schema: AppSchema;
+    value: any;
+  }> = [];
+
+  traverseSchemaForFields(
+    schema.value,
+    (currentSchema, path) => {
+      // Only process top-level properties for form fields
+      if (path.length === 1) {
+        const key = path[0];
+        fieldInfos.push({
+          key,
+          schema: currentSchema,
+          value: formData.value[key],
+        });
+      }
+      return null; // We don't care about the return value here
+    },
+    {
+      maxDepth: 10,
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    schema.value
+  );
+
+  return fieldInfos;
+});
+
 // ===== Button Visibility Logic =====
 const shouldShowKeyInput = computed(() => {
   return props.mode === "appdata";
@@ -448,7 +491,8 @@ const loadSchema = async (schemaId: string, showDialog = false) => {
     const schemaData = await invoke(command, {
       [paramName]: schemaId,
     });
-    console.log(`[${props.mode}] Schema loaded:`, schemaData);
+    console.log(`[SchemaDataForm][${props.mode}] Schema loaded:`);
+    console.log(JSON.stringify(schemaData, null, 2));
     schema.value = schemaData as AppSchema;
 
     emit("schema-change", schemaId);
@@ -595,7 +639,7 @@ const performSave = async () => {
 
   try {
     const command = getInvokeCommand("save_data");
-    // config 模式下使用 key=0
+    // Use key=0 for config mode
     const key = props.mode === "config" ? 0 : currentDataKey.value;
     const dataWithKey = { ...formData.value, id: key };
     const dataBytes = new TextEncoder().encode(JSON.stringify(dataWithKey));
@@ -660,35 +704,9 @@ const createNew = async () => {
     // Load schema and generate default values
     await loadSchema(selectedSchema.value, false); // Don't show dialog for create new
 
-    // Generate default values for new data
-    if (schema.value && schema.value.properties) {
-      const defaultData: FormData = {};
-      for (const [key, prop] of Object.entries(schema.value.properties)) {
-        if (prop.default !== undefined) {
-          defaultData[key] = prop.default;
-        } else {
-          switch (prop.type) {
-            case "string":
-              defaultData[key] = "";
-              break;
-            case "integer":
-            case "number":
-              defaultData[key] = 0;
-              break;
-            case "boolean":
-              defaultData[key] = false;
-              break;
-            case "array":
-              defaultData[key] = [];
-              break;
-            case "object":
-              defaultData[key] = {};
-              break;
-            default:
-              defaultData[key] = null;
-          }
-        }
-      }
+    // Generate default values for new data using schema traversal
+    if (schema.value) {
+      const defaultData = initializeSchemaData(schema.value, schema.value, 10);
       formData.value = defaultData;
       originalData.value = JSON.parse(JSON.stringify(defaultData));
     }
@@ -726,7 +744,7 @@ const deleteData = async () => {
 
     try {
       const command = getInvokeCommand("remove_data");
-      // config 模式下使用 key=0
+      // Use key=0 for config mode
       const key = props.mode === "config" ? 0 : currentDataKey.value;
 
       console.log(

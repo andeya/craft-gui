@@ -64,28 +64,28 @@
         <QCard class="form-fields-card">
           <QCardSection class="q-pa-md">
             <div class="fields-container" :class="`columns-${columns}`">
-              <!-- Render form fields based on schema properties -->
-              <template v-if="schema.properties">
+              <!-- Render form fields based on schema traversal -->
+              <template v-if="schema">
                 <SchemaField
-                  v-for="(prop, key) in schema.properties"
-                  :key="key"
-                  :schema="prop"
+                  v-for="fieldInfo in schemaFieldInfos"
+                  :key="fieldInfo.key"
+                  :schema="fieldInfo.schema"
                   :root-schema="schema"
-                  :model-value="formData[key]"
+                  :model-value="fieldInfo.value"
                   :is-modified="
                     props.showModificationIndicator
-                      ? isFieldModified(key)
+                      ? isFieldModified(fieldInfo.key)
                       : false
                   "
-                  :parent-key="key"
+                  :parent-key="fieldInfo.key"
                   :check-nested-modification="
                     props.showModificationIndicator
                       ? isNestedFieldModified
                       : () => false
                   "
                   :compact="compactMode"
-                  :field-key="key"
-                  @update:model-value="handleFieldUpdate(key, $event)"
+                  :field-key="fieldInfo.key"
+                  @update:model-value="handleFieldUpdate(fieldInfo.key, $event)"
                   @validation-error="handleValidationError"
                   @validation-success="handleValidationSuccess"
                 />
@@ -198,6 +198,7 @@ import type {
 import {
   initializeSchemaData,
   validateSchemaData,
+  traverseSchemaForFields,
 } from "../../utils/schema-utils";
 
 // Constants
@@ -250,6 +251,43 @@ const canSubmit = computed((): boolean => {
   return (
     !loading.value && !submitting.value && validationErrors.value.size === 0
   );
+});
+
+// Generate field infos using schema traversal
+const schemaFieldInfos = computed(() => {
+  if (!schema.value) return [];
+
+  const fieldInfos: Array<{
+    key: string;
+    schema: AppSchema;
+    value: any;
+  }> = [];
+
+  traverseSchemaForFields(
+    schema.value,
+    (currentSchema, path) => {
+      // Only process top-level properties for form fields
+      if (path.length === 1) {
+        const key = path[0];
+        fieldInfos.push({
+          key,
+          schema: currentSchema,
+          value: formData.value[key],
+        });
+      }
+      return null; // We don't care about the return value here
+    },
+    {
+      maxDepth: MAX_DEPTH,
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    schema.value
+  );
+
+  return fieldInfos;
 });
 
 const getInvokeCommand = (command: string): string => {

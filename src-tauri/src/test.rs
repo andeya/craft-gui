@@ -3,8 +3,8 @@ use reindeer::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
 // Simple test schema for demonstration
-#[derive(Debug, Serialize, Deserialize, JsonSchema, Default)]
-#[schemars(title = "User Profile")]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[schemars(title = "User Profile", example=UserProfile::default())]
 pub struct UserProfile {
   pub id: u32,
   #[schemars(title = "Full Name", description = "Enter your full name")]
@@ -24,9 +24,21 @@ pub struct UserProfile {
   pub is_active: bool,
 }
 
+impl Default for UserProfile {
+  fn default() -> Self {
+    Self {
+      id: 1,
+      name: "andeya".to_owned(),
+      email: "andeyalee@outlook.com".to_owned(),
+      age: Default::default(),
+      is_active: true,
+    }
+  }
+}
+
 // Product configuration schema
-#[derive(Debug, Serialize, Deserialize, JsonSchema, Entity, Default)]
-#[entity(id = "id")]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[schemars(title = "Product Config", example=ProductConfig::default())]
 pub struct ProductConfig {
   /// The product ID
   pub id: u32,
@@ -47,10 +59,21 @@ pub struct ProductConfig {
   pub in_stock: bool,
 }
 
+impl Default for ProductConfig {
+  fn default() -> Self {
+    Self {
+      id: 1,
+      name: "craft-gui".to_owned(),
+      price: 88.88,
+      category: Default::default(),
+      in_stock: true,
+    }
+  }
+}
+
 // System settings schema
-#[derive(Debug, Serialize, Deserialize, JsonSchema, Entity, Default)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Default)]
 #[schemars(title = "System Settings")]
-#[entity(id = "id")]
 pub struct SystemSettings {
   pub id: u32,
   #[schemars(title = "Theme", description = "Select the application theme")]

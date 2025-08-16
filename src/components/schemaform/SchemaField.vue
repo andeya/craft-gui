@@ -84,20 +84,22 @@
       <div v-if="isObjectType" class="object-container">
         <div v-if="resolvedSchema.properties" class="q-ml-md q-mt-sm">
           <div
-            v-for="(prop, key) in resolvedSchema.properties"
-            :key="key"
+            v-for="fieldInfo in objectFieldInfos"
+            :key="fieldInfo.key"
             class="q-mb-md"
           >
             <SchemaField
-              :schema="prop"
+              :schema="fieldInfo.schema"
               :root-schema="props.rootSchema"
-              :model-value="getNestedValue(key)"
-              :is-modified="isNestedFieldModified(key)"
-              :parent-key="key"
+              :model-value="fieldInfo.value"
+              :is-modified="isNestedFieldModified(fieldInfo.key)"
+              :parent-key="fieldInfo.key"
               :check-nested-modification="props.checkNestedModification"
               :compact="compact"
-              :field-key="key"
-              @update:model-value="handleNestedValueUpdate(key, $event)"
+              :field-key="fieldInfo.key"
+              @update:model-value="
+                handleNestedValueUpdate(fieldInfo.key, $event)
+              "
               @validation-error="handleNestedValidationError"
               @validation-success="handleNestedValidationSuccess"
             />
@@ -134,7 +136,11 @@ import type {
   SchemaFieldProps,
   SchemaFieldEmits,
 } from "./types";
-import { resolveSchemaRef, getSchemaType } from "../../utils/schema-utils";
+import {
+  resolveSchemaRef,
+  getSchemaType,
+  traverseSchemaForFields,
+} from "../../utils/schema-utils";
 
 const props = withDefaults(defineProps<SchemaFieldProps>(), {
   rootSchema: null,
@@ -203,6 +209,43 @@ const fieldDisplayName = computed((): string => {
 
 const inputPlaceholder = computed((): string => {
   return resolvedSchema.value.description || "Enter value";
+});
+
+// Generate object field infos using schema traversal
+const objectFieldInfos = computed(() => {
+  if (!isObjectType.value || !resolvedSchema.value.properties) return [];
+
+  const fieldInfos: Array<{
+    key: string;
+    schema: AppSchema;
+    value: any;
+  }> = [];
+
+  traverseSchemaForFields(
+    resolvedSchema.value,
+    (currentSchema, path) => {
+      // Only process direct properties of this object
+      if (path.length === 1) {
+        const key = path[0];
+        fieldInfos.push({
+          key,
+          schema: currentSchema,
+          value: getNestedValue(key),
+        });
+      }
+      return null; // We don't care about the return value here
+    },
+    {
+      maxDepth: 1, // Only one level deep for object properties
+      resolveRefs: true,
+      includeArrays: true,
+      includeObjects: true,
+      includePrimitives: true,
+    },
+    props.rootSchema || undefined
+  );
+
+  return fieldInfos;
 });
 
 // Value conversions for different input types

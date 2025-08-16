@@ -194,6 +194,10 @@ export function traverseSchema(
         return callback(resolvedSchema, path, parentSchema, parentKey);
       }
 
+      // For data initialization, check if the object itself has examples or default
+      // But for schema traversal (like field generation), we should continue
+      // We'll use a different approach - only apply this logic in initializeSchemaData
+
       if (resolvedSchema.properties) {
         const result: Record<string, any> = {};
 
@@ -290,11 +294,19 @@ export function initializeSchemaData(
   rootSchema?: AppSchema,
   maxDepth: number = 10
 ): any {
+  // First, check if the root schema itself has examples
+  if (schema.examples && schema.examples.length > 0) {
+    return schema.examples[0];
+  }
+
+  // Otherwise, traverse the schema to build the data structure
   return traverseSchema(
     schema,
     (currentSchema) => {
-      // Use default value if available, otherwise use zero value
-      if (currentSchema.default !== undefined) {
+      // For primitive types, use the priority: examples[0] > default > zero value
+      if (currentSchema.examples && currentSchema.examples.length > 0) {
+        return currentSchema.examples[0];
+      } else if (currentSchema.default !== undefined) {
         return currentSchema.default;
       } else {
         return getSchemaZeroValue(currentSchema);
@@ -309,6 +321,122 @@ export function initializeSchemaData(
     },
     rootSchema
   );
+}
+
+/**
+ * Traverse schema for field generation (doesn't stop at object examples/defaults)
+ */
+export function traverseSchemaForFields(
+  schema: AppSchema,
+  callback: SchemaTraversalCallback,
+  options: SchemaTraversalOptions = {},
+  rootSchema?: AppSchema,
+  path: string[] = [],
+  parentSchema?: AppSchema,
+  parentKey?: string,
+  visited: Set<string> = new Set()
+): any {
+  const {
+    maxDepth = 10,
+    resolveRefs = true,
+    includeArrays = true,
+    includeObjects = true,
+    includePrimitives = true,
+  } = options;
+
+  // Check depth limit
+  if (maxDepth <= 0) {
+    return callback(schema, path, parentSchema, parentKey);
+  }
+
+  // Create a unique identifier for this schema node to detect cycles
+  const nodeId = path.length > 0 ? path.join(".") : "root";
+
+  // Check for circular references
+  if (visited.has(nodeId)) {
+    console.warn(
+      `Circular reference detected in schema traversal at path: ${nodeId}`
+    );
+    return callback(schema, path, parentSchema, parentKey);
+  }
+
+  // Add current node to visited set
+  visited.add(nodeId);
+
+  // Resolve $ref references if enabled
+  const resolvedSchema =
+    resolveRefs && rootSchema ? resolveSchemaRef(schema, rootSchema) : schema;
+
+  const type = getSchemaType(resolvedSchema);
+
+  // Handle different schema types
+  switch (type) {
+    case "object":
+      if (!includeObjects) {
+        return callback(resolvedSchema, path, parentSchema, parentKey);
+      }
+
+      if (resolvedSchema.properties) {
+        const result: Record<string, any> = {};
+
+        Object.entries(resolvedSchema.properties).forEach(
+          ([key, propSchema]) => {
+            const newPath = [...path, key];
+            result[key] = traverseSchemaForFields(
+              propSchema,
+              callback,
+              { ...options, maxDepth: maxDepth - 1 },
+              rootSchema,
+              newPath,
+              resolvedSchema,
+              key,
+              visited
+            );
+          }
+        );
+
+        return result;
+      }
+
+      return callback(resolvedSchema, path, parentSchema, parentKey);
+
+    case "array":
+      if (!includeArrays) {
+        return callback(resolvedSchema, path, parentSchema, parentKey);
+      }
+
+      if (resolvedSchema.items && maxDepth > 0) {
+        if (Array.isArray(resolvedSchema.items)) {
+          // Tuple array - process each item
+          return resolvedSchema.items.map((item, index) => {
+            const newPath = [...path, index.toString()];
+            return traverseSchemaForFields(
+              item,
+              callback,
+              { ...options, maxDepth: maxDepth - 1 },
+              rootSchema,
+              newPath,
+              resolvedSchema,
+              index.toString(),
+              visited
+            );
+          });
+        } else {
+          // Regular array - return empty array (items added dynamically)
+          return [];
+        }
+      }
+
+      return callback(resolvedSchema, path, parentSchema, parentKey);
+
+    default:
+      // Primitive types
+      if (!includePrimitives) {
+        return callback(resolvedSchema, path, parentSchema, parentKey);
+      }
+
+      return callback(resolvedSchema, path, parentSchema, parentKey);
+  }
 }
 
 /**
