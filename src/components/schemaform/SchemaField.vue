@@ -4,7 +4,7 @@
     <div class="field-header">
       <label class="text-base font-medium q-mb-sm block">
         {{ fieldDisplayName }}
-        <span v-if="resolvedSchema.required" class="text-red-500"> *</span>
+        <span v-if="isFieldRequired" class="text-red-500"> *</span>
         <span
           v-if="resolvedSchema.description && !compact"
           class="field-description"
@@ -235,6 +235,48 @@ const fieldDisplayName = computed((): string => {
 
 const inputPlaceholder = computed((): string => {
   return resolvedSchema.value.description || "Enter value";
+});
+
+// Check if this field is required
+const isFieldRequired = computed((): boolean => {
+  if (props.parentKey && props.rootSchema) {
+    // For root-level fields (like "args", "cookie")
+    if (props.rootSchema.required && Array.isArray(props.rootSchema.required)) {
+      return props.rootSchema.required.includes(props.parentKey);
+    }
+
+    // For nested fields (like "groupid", "parentid"), check if the field is in the parent object's required array
+    if (props.fieldPath) {
+      // Extract the parent path from fieldPath (e.g., "args.groupid" -> "args")
+      const pathParts = props.fieldPath.split(".");
+      if (pathParts.length > 1) {
+        const parentPath = pathParts.slice(0, -1).join(".");
+        const fieldName = pathParts[pathParts.length - 1];
+
+        // Get the parent object's schema by traversing the path
+        let parentSchema = props.rootSchema;
+        for (const part of parentPath.split(".")) {
+          if (parentSchema.properties && parentSchema.properties[part]) {
+            parentSchema = resolveSchemaRef(
+              parentSchema.properties[part],
+              props.rootSchema
+            );
+          } else {
+            break;
+          }
+        }
+
+        if (
+          parentSchema &&
+          parentSchema.required &&
+          Array.isArray(parentSchema.required)
+        ) {
+          return parentSchema.required.includes(fieldName);
+        }
+      }
+    }
+  }
+  return false;
 });
 
 // Use internal validation error
