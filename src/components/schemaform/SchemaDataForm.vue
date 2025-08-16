@@ -244,10 +244,7 @@ import {
   getErrorMessage,
   UI_MESSAGES,
 } from "@/utils/ui-constants";
-import {
-  initializeSchemaData,
-  traverseSchemaForFields,
-} from "@/utils/schema-utils";
+import { initializeSchemaData, resolveSchemaRef } from "@/utils/schema-utils";
 
 // Type definitions
 interface SchemaOption {
@@ -399,29 +396,19 @@ const schemaFieldInfos = computed(() => {
     value: any;
   }> = [];
 
-  traverseSchemaForFields(
-    schema.value,
-    (currentSchema, path) => {
-      // Only process top-level properties for form fields
-      if (path.length === 1) {
-        const key = path[0];
-        fieldInfos.push({
-          key,
-          schema: currentSchema,
-          value: formData.value[key],
-        });
-      }
-      return null; // We don't care about the return value here
-    },
-    {
-      maxDepth: 10,
-      resolveRefs: true,
-      includeArrays: true,
-      includeObjects: true,
-      includePrimitives: true,
-    },
-    schema.value
-  );
+  // For form fields, we need to traverse the schema properties directly
+  if (schema.value.properties) {
+    Object.entries(schema.value.properties).forEach(([key, propSchema]) => {
+      // Resolve $ref references for the property schema
+      const resolvedSchema = resolveSchemaRef(propSchema, schema.value!);
+
+      fieldInfos.push({
+        key,
+        schema: resolvedSchema,
+        value: formData.value[key],
+      });
+    });
+  }
 
   return fieldInfos;
 });

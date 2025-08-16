@@ -198,7 +198,7 @@ import type {
 import {
   initializeSchemaData,
   validateSchemaData,
-  traverseSchemaForFields,
+  resolveSchemaRef,
 } from "../../utils/schema-utils";
 
 // Constants
@@ -263,29 +263,19 @@ const schemaFieldInfos = computed(() => {
     value: any;
   }> = [];
 
-  traverseSchemaForFields(
-    schema.value,
-    (currentSchema, path) => {
-      // Only process top-level properties for form fields
-      if (path.length === 1) {
-        const key = path[0];
-        fieldInfos.push({
-          key,
-          schema: currentSchema,
-          value: formData.value[key],
-        });
-      }
-      return null; // We don't care about the return value here
-    },
-    {
-      maxDepth: MAX_DEPTH,
-      resolveRefs: true,
-      includeArrays: true,
-      includeObjects: true,
-      includePrimitives: true,
-    },
-    schema.value
-  );
+  // For form fields, we need to traverse the schema properties directly
+  if (schema.value.properties) {
+    Object.entries(schema.value.properties).forEach(([key, propSchema]) => {
+      // Resolve $ref references for the property schema
+      const resolvedSchema = resolveSchemaRef(propSchema, schema.value!);
+
+      fieldInfos.push({
+        key,
+        schema: resolvedSchema,
+        value: formData.value[key],
+      });
+    });
+  }
 
   return fieldInfos;
 });
@@ -340,15 +330,21 @@ const initializeFormData = (): void => {
     return;
   }
 
-  // Initialize all fields from schema with recursive support and $ref resolution
+  // If we have initial data, use it directly
+  if (Object.keys(props.initialData).length > 0) {
+    formData.value = { ...props.initialData };
+    originalData.value = JSON.parse(JSON.stringify(formData.value));
+    return;
+  }
+
+  // Only initialize with schema defaults when there's no initial data
   const defaultData = initializeSchemaData(
     schema.value,
     schema.value,
     MAX_DEPTH
   );
 
-  // Merge with initial data (initial data takes precedence)
-  formData.value = { ...defaultData, ...props.initialData };
+  formData.value = { ...defaultData };
   originalData.value = JSON.parse(JSON.stringify(formData.value));
 };
 
