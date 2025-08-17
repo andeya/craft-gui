@@ -67,6 +67,7 @@
         type="number"
         :min="resolvedSchema.minimum"
         :max="resolvedSchema.maximum"
+        :step="resolvedSchema.type === 'integer' ? 1 : 'any'"
         :placeholder="inputPlaceholder"
         :disabled="resolvedSchema.readOnly"
         :rules="validationRules"
