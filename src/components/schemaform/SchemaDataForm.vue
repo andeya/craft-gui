@@ -71,7 +71,7 @@
                   flat
                   rounded
                   size="sm"
-                  class="compact-btn-group"
+                  class="compact-btn-group responsive-btn-group"
                 >
                   <QBtn
                     v-if="shouldShowNewButton"
@@ -79,8 +79,12 @@
                     color="grey-6"
                     :disabled="!canCreate || loading"
                     @click="createNew"
+                    class="action-btn"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.NEW }}</QTooltip>
+                    <span class="btn-label">{{
+                      UI_MESSAGES.TOOLTIPS.NEW
+                    }}</span>
                   </QBtn>
                   <QBtn
                     v-if="shouldShowReloadButton"
@@ -88,8 +92,12 @@
                     color="info"
                     :disabled="!canLoad || loading"
                     @click="reloadData"
+                    class="action-btn"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.RELOAD }}</QTooltip>
+                    <span class="btn-label">{{
+                      UI_MESSAGES.TOOLTIPS.RELOAD
+                    }}</span>
                   </QBtn>
                   <QBtn
                     v-if="shouldShowSaveButton"
@@ -98,8 +106,12 @@
                     :disabled="!canSave || loading"
                     type="submit"
                     form="data-form"
+                    class="action-btn"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.SAVE }}</QTooltip>
+                    <span class="btn-label">{{
+                      UI_MESSAGES.TOOLTIPS.SAVE
+                    }}</span>
                   </QBtn>
                   <QBtn
                     v-if="shouldShowDeleteButton"
@@ -107,8 +119,12 @@
                     color="grey-6"
                     :disabled="!canDelete || loading"
                     @click="deleteData"
+                    class="action-btn"
                   >
                     <QTooltip>{{ UI_MESSAGES.TOOLTIPS.DELETE }}</QTooltip>
+                    <span class="btn-label">{{
+                      UI_MESSAGES.TOOLTIPS.DELETE
+                    }}</span>
                   </QBtn>
                 </QBtnGroup>
               </div>
@@ -1294,6 +1310,29 @@ defineExpose({
   }
 }
 
+/* Responsive Button Group */
+.responsive-btn-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+/* Action Button Styles */
+.action-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-label {
+  display: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 599px) {
   .compact-select {
@@ -1317,6 +1356,46 @@ defineExpose({
 
   .form-header .row.q-col-gutter-sm {
     justify-content: center;
+  }
+
+  /* Mobile button group layout */
+  .responsive-btn-group {
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .responsive-btn-group .q-btn {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    margin: 0;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Improve button spacing and touch targets */
+  .responsive-btn-group .q-btn:not(:last-child) {
+    margin-bottom: 4px;
+  }
+
+  /* Add subtle hover effects for better UX */
+  .responsive-btn-group .q-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  /* Show button labels on mobile */
+  .btn-label {
+    display: inline-block;
+  }
+
+  /* Improve button layout for mobile */
+  .action-btn {
+    justify-content: flex-start;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 </style>
