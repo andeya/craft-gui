@@ -36,18 +36,7 @@ export function resolveSchemaRef(
 
   const refPath = schema.$ref;
 
-  // Debug logging in development
-  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-    console.log(`[resolveSchemaRef] Resolving: ${refPath}`);
-    console.log(
-      `[resolveSchemaRef] Root schema keys:`,
-      Object.keys(rootSchema)
-    );
-    console.log(
-      `[resolveSchemaRef] $defs keys:`,
-      Object.keys(rootSchema.$defs || {})
-    );
-  }
+  // Debug logging removed for performance
 
   // Note: Circular reference detection is now handled in traverseSchemaForFields
   // This function only resolves references without circular detection
@@ -88,11 +77,7 @@ export function resolveSchemaRef(
   }
 
   if (resolved) {
-    // Debug logging in development
-    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-      console.log(`[resolveSchemaRef] Successfully resolved: ${refPath}`);
-      console.log(`[resolveSchemaRef] Resolved schema:`, resolved);
-    }
+    // Debug logging removed for performance
 
     // Merge the resolved schema with the original schema
     const mergedSchema = { ...resolved, ...schema };
@@ -101,10 +86,7 @@ export function resolveSchemaRef(
     return resolveSchemaRef(mergedSchema, rootSchema, maxDepth - 1, visited);
   }
 
-  // Debug logging for unresolved references
-  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-    console.warn(`[resolveSchemaRef] Failed to resolve: ${refPath}`);
-  }
+  // Debug logging removed for performance
 
   return schema;
 }

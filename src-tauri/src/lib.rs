@@ -2,9 +2,11 @@ mod appdata;
 pub mod config;
 mod storage;
 mod test;
+mod utils;
 pub use appdata::AppData;
 pub use config::get_config;
 pub use storage::sled_db;
+pub use utils::is_default;
 
 #[allow(unused_imports)]
 use tauri::Manager;
@@ -62,13 +64,13 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     app.exit(3);
     return;
   }
-  if let Err(e) = register_all_appdata().await {
-    log::error!("Failed to register all appdata: {}", e);
+  if let Err(e) = config::init_config() {
+    log::error!("Failed to initialize config: {}", e);
     app.exit(4);
     return;
   }
-  if let Err(e) = config::init_config() {
-    log::error!("Failed to initialize config: {}", e);
+  if let Err(e) = register_all_appdata().await {
+    log::error!("Failed to register all appdata: {}", e);
     app.exit(5);
     return;
   }

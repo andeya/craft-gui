@@ -1,5 +1,13 @@
 <template>
-  <QDialog ref="dialogRef" @hide="onDialogHide">
+  <QDialog
+    ref="dialogRef"
+    v-model="isVisible"
+    :persistent="persistent"
+    :maximized="maximized"
+    :full-width="fullWidth"
+    :full-height="fullHeight"
+    @hide="onDialogHide"
+  >
     <QCard class="q-dialog-plugin">
       <QCardSection>
         <div class="text-diff-dialog">
@@ -55,7 +63,7 @@
         <QBtn
           :color="cancelButtonColor"
           :label="cancelButtonLabel"
-          @click="onDialogCancel"
+          @click="onCancelClick"
         />
       </QCardActions>
     </QCard>
@@ -63,8 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useDialogPluginComponent } from "quasar";
+import { computed, ref } from "vue";
 import * as diff from "diff";
 
 interface DiffChange {
@@ -88,6 +95,15 @@ interface Props {
   cancelButtonLabel?: string;
   confirmButtonColor?: string;
   cancelButtonColor?: string;
+
+  // Dialog behavior
+  persistent?: boolean;
+  maximized?: boolean;
+  fullWidth?: boolean;
+  fullHeight?: boolean;
+
+  // Dialog visibility
+  modelValue?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -98,16 +114,27 @@ const props = withDefaults(defineProps<Props>(), {
   cancelButtonLabel: "Cancel",
   confirmButtonColor: "primary",
   cancelButtonColor: "secondary",
+  persistent: true,
+  maximized: false,
+  fullWidth: true, // Use full width for diff dialog
+  fullHeight: false,
+  modelValue: false,
 });
 
-defineEmits([
-  // REQUIRED; need to specify some events that your
-  // component will emit through useDialogPluginComponent()
-  ...useDialogPluginComponent.emits,
-]);
+const emit = defineEmits<{
+  "update:model-value": [value: boolean];
+  ok: [];
+  cancel: [];
+  hide: [];
+}>();
 
-const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } =
-  useDialogPluginComponent();
+// Dialog state
+const isVisible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit("update:model-value", value),
+});
+
+const dialogRef = ref();
 
 const hasChanges = computed(() => {
   return props.currentText !== props.originalText;
@@ -153,14 +180,35 @@ const diffChanges = computed(() => {
   return changes;
 });
 
-// this is part of our example (so not required)
-function onOKClick() {
-  // on OK, it is REQUIRED to
-  // call onDialogOK (with optional payload)
-  onDialogOK();
-  // or with payload: onDialogOK({ ... })
-  // ...and it will also hide the dialog automatically
+// Dialog methods
+function show() {
+  isVisible.value = true;
 }
+
+function hide() {
+  isVisible.value = false;
+}
+
+// Event handlers
+function onOKClick() {
+  emit("ok");
+  hide();
+}
+
+function onCancelClick() {
+  emit("cancel");
+  hide();
+}
+
+function onDialogHide() {
+  emit("hide");
+}
+
+// Expose methods for external use
+defineExpose({
+  show,
+  hide,
+});
 </script>
 
 <style scoped>
@@ -169,7 +217,7 @@ function onOKClick() {
   font-size: 0.875rem;
   line-height: 1.4;
   width: 100%;
-  max-width: 100%;
+  min-width: 600px; /* Minimum content width */
 }
 
 .diff-header {

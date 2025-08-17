@@ -83,6 +83,7 @@ pub struct SystemSettings {
   pub language: String,
 
   #[schemars(title = "Auto Save", description = "Enable auto save functionality")]
+  #[serde(default, skip_serializing_if = "crate::is_default")]
   pub auto_save: bool,
 
   #[schemars(

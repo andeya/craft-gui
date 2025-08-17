@@ -365,16 +365,17 @@ const loadSchema = async (): Promise<void> => {
 
   try {
     const command = getInvokeCommand("get_schema");
-    console.log(`[SchemaApiForm] Loading schema: ${props.schemaId}`);
 
     const schemaData = await invoke(command, {
       schemaId: props.schemaId,
     });
 
-    console.log(`[SchemaApiForm] Schema loaded:`);
+    schema.value = schemaData as AppSchema;
+
+    // Format and output schema JSON
+    console.log(`[SchemaApiForm] Schema loaded for: ${props.schemaId}`);
     console.log(JSON.stringify(schemaData, null, 2));
 
-    schema.value = schemaData as AppSchema;
     initializeFormData();
     emit("schema-loaded", schema.value);
   } catch (err) {
@@ -509,9 +510,6 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
   submitting.value = true;
 
   try {
-    console.log("[SchemaApiForm] Submitting form data:");
-    console.log(JSON.stringify(formData.value, null, 2));
-
     // Set a timeout to reset submitting state if callback is not called
     const timeoutId = setTimeout(() => {
       console.warn(

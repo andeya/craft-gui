@@ -249,10 +249,24 @@
       </QCard>
     </div>
   </div>
+
+  <!-- Diff Dialog - Only render when diff functionality is enabled -->
+  <TextDiffDialog
+    v-if="props.showDiffBeforeSave"
+    v-model="showDiffDialog"
+    :current-text="diffStringify(formData)"
+    :original-text="diffStringify(originalData)"
+    :title="getDialogTitle('SAVE_DATA')"
+    subtitle="Review the differences between current and original data"
+    :confirm-button-label="UI_MESSAGES.FORM.SAVE"
+    cancel-button-color="secondary"
+    :full-width="true"
+    @ok="performSave"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, h } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import { invoke } from "@tauri-apps/api/core";
 import SchemaField from "@/components/schemaform/SchemaField.vue";
@@ -335,7 +349,7 @@ const props = withDefaults(defineProps<Props>(), {
   showReloadButton: true,
   availableSchemas: () => [],
   mode: "appdata",
-  showDiffBeforeSave: undefined,
+  showDiffBeforeSave: "toml", // Default to TOML format
   showModificationIndicator: true, // Show modification indicators
   fieldLayoutConfig: () => [], // Field layout configuration
 });
@@ -375,6 +389,7 @@ const compactMode = ref(props.compact);
 const isNewMode = ref(false); // Track if we're in "new" mode
 const fieldRefs = ref<Record<string, any>>({}); // Store field component references
 const formRef = ref<any>(null); // Form reference for validation
+const showDiffDialog = ref(false); // Control diff dialog visibility
 
 // ===== Helper Functions =====
 const getInitialSchemaId = () => {
@@ -563,13 +578,14 @@ const loadSchema = async (schemaId: string, showDialog = false) => {
   try {
     const command = getInvokeCommand("get_schema");
     const paramName = props.mode === "config" ? "schemaId" : "schemaId";
-    console.log(`[${props.mode}] Loading schema for: ${schemaId}`);
     const schemaData = await invoke(command, {
       [paramName]: schemaId,
     });
-    console.log(`[SchemaDataForm][${props.mode}] Schema loaded:`);
-    console.log(JSON.stringify(schemaData, null, 2));
     schema.value = schemaData as AppSchema;
+
+    // Format and output schema JSON
+    console.log(`[SchemaDataForm] Schema loaded for: ${schemaId}`);
+    console.log(JSON.stringify(schemaData, null, 2));
 
     emit("schema-change", schemaId);
   } catch (err) {
@@ -610,17 +626,12 @@ const loadData = async (showDialog = false) => {
     const key = props.mode === "config" ? 0 : currentDataKey.value;
     const params = { schemaId: selectedSchema.value, key };
 
-    console.log(
-      `[${props.mode}] Loading data for schema: ${selectedSchema.value}, key: ${key}`
-    );
     const dataBytes = await invoke(command, params);
-    console.log(`[${props.mode}] Data bytes received:`, dataBytes);
 
     if (dataBytes && Array.isArray(dataBytes) && dataBytes.length > 0) {
       const data = JSON.parse(
         new TextDecoder().decode(new Uint8Array(dataBytes))
       );
-      console.log(`[SchemaDataForm] Data decoded:`, data);
 
       // Schema validation is now handled by the backend
 
@@ -630,9 +641,6 @@ const loadData = async (showDialog = false) => {
       isNewMode.value = false; // Exit new mode when loading existing data
       emit("load", data);
     } else {
-      console.log(
-        `[SchemaDataForm] No data found, setting dataExists to false`
-      );
       // Ensure schema is loaded for form structure
       if (!schema.value) {
         await loadSchema(selectedSchema.value, showDialog);
@@ -644,11 +652,6 @@ const loadData = async (showDialog = false) => {
       isNewMode.value = false; // Reset new mode when loading data
       emit("load", null);
     }
-    console.log(
-      `[SchemaDataForm] Data loaded, dataExists: ${
-        dataExists.value
-      }, schema: ${JSON.stringify(schema.value)}`
-    );
   } catch (err) {
     error.value = `${getErrorMessage("FAILED_TO_LOAD_DATA")}: ${err}`;
     console.error("Data load error:", err);
@@ -666,13 +669,29 @@ const loadData = async (showDialog = false) => {
 };
 
 const diffStringify = (obj: object) => {
+  // Defensive programming: ensure we have a valid object
+  if (!obj || typeof obj !== "object") {
+    return "";
+  }
+
+  // Handle different diff formats
   if (props.showDiffBeforeSave === "json") {
     return JSON.stringify(obj, null, 2);
   }
   if (props.showDiffBeforeSave === "toml") {
     return TOML.stringify(obj);
   }
-  return props.showDiffBeforeSave!(obj);
+  if (typeof props.showDiffBeforeSave === "function") {
+    try {
+      return props.showDiffBeforeSave(obj);
+    } catch (error) {
+      console.warn("Custom diff function failed, falling back to JSON:", error);
+      return JSON.stringify(obj, null, 2);
+    }
+  }
+
+  // Fallback to JSON for unknown formats
+  return JSON.stringify(obj, null, 2);
 };
 
 const handleFormSubmit = async (evt?: Event) => {
@@ -724,21 +743,7 @@ const saveData = async () => {
 
   // Show diff dialog if enabled
   if (props.showDiffBeforeSave && hasChanges.value) {
-    $q.dialog({
-      title: getDialogTitle("SAVE_DATA"),
-      component: h(TextDiffDialog, {
-        currentText: diffStringify(formData.value),
-        originalText: diffStringify(originalData.value),
-        subtitle: "Review the differences between current and original data",
-        confirmButtonLabel: UI_MESSAGES.FORM.SAVE,
-        cancelButtonColor: "secondary",
-      }),
-      cancel: true,
-      persistent: true,
-      style: `min-width: 60vw; max-width: 85vw;`,
-    }).onOk(async () => {
-      await performSave();
-    });
+    showDiffDialog.value = true;
   } else {
     $q.dialog({
       title: getDialogTitle("SAVE_DATA"),
@@ -767,12 +772,7 @@ const performSave = async () => {
       data: Array.from(dataBytes),
     };
 
-    console.log(
-      `[${props.mode}] Saving data for schema: ${selectedSchema.value}, key: ${key}`
-    );
-    console.log(`[${props.mode}] Data to save:`, dataWithKey);
     await invoke(command, params);
-    console.log(`[${props.mode}] Data saved successfully`);
 
     // Update original data and mark as existing
     originalData.value = JSON.parse(JSON.stringify(formData.value));
@@ -808,16 +808,11 @@ const createNew = async () => {
   try {
     // Find the next available key starting from current key
     const startKey = props.mode === "config" ? 0 : currentDataKey.value;
-    console.log(
-      `[${props.mode}] Finding next available key for schema: ${selectedSchema.value}, starting from: ${startKey}`
-    );
-
     const command = getInvokeCommand("find_next_available_key");
     const nextKey = await invoke(command, {
       schemaId: selectedSchema.value,
       startKey,
     });
-    console.log(`[${props.mode}] Next available key:`, nextKey);
 
     // Update the current key to the next available key
     currentDataKey.value = nextKey as number;
@@ -870,14 +865,10 @@ const deleteData = async () => {
       // Use key=0 for config mode
       const key = props.mode === "config" ? 0 : currentDataKey.value;
 
-      console.log(
-        `[${props.mode}] Deleting data for schema: ${selectedSchema.value}, key: ${key}`
-      );
       await invoke(command, {
         schemaId: selectedSchema.value,
         key,
       });
-      console.log(`[${props.mode}] Data deleted successfully`);
 
       await loadSchema(selectedSchema.value);
       dataExists.value = false;
