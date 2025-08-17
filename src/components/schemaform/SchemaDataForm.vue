@@ -610,7 +610,7 @@ const loadSchema = async (schemaId: string, showDialog = false) => {
 
     // Format and output schema JSON
     debug.log(`Schema loaded for: ${schemaId}`);
-    debug.log("Schema data", schemaData);
+    debug.log("Schema data:\n" + JSON.stringify(schemaData, null, 2));
 
     emit("schema-change", schemaId);
   } catch (err) {

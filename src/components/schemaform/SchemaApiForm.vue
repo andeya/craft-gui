@@ -395,7 +395,7 @@ const loadSchema = async (): Promise<void> => {
 
     // Format and output schema JSON
     debug.log(`Schema loaded for: ${props.schemaId}`);
-    debug.log("Schema data", schemaData);
+    debug.log("Schema data:\n" + JSON.stringify(schemaData, null, 2));
 
     initializeFormData();
     emit("schema-loaded", schema.value);

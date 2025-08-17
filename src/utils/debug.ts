@@ -45,26 +45,24 @@ export class DebugLogger {
   }
 }
 
+// Debug whitelist - components that should show debug logs
+const DEBUG_WHITELIST = new Set([
+  "SchemaDataForm",
+  "SchemaApiForm",
+  "SchemaField",
+  // Add more components here as needed
+]);
+
 // Global debug configuration
 export const debugConfig = {
   enabled: isDevelopment,
-  components: new Set<string>(),
 };
 
 // Factory function to create debug loggers
 export function createDebugLogger(component: string): DebugLogger {
   return new DebugLogger(component, {
-    enabled: debugConfig.enabled && debugConfig.components.has(component),
+    enabled: debugConfig.enabled && DEBUG_WHITELIST.has(component),
   });
-}
-
-// Utility function to enable/disable debug for specific components
-export function enableDebugFor(component: string): void {
-  debugConfig.components.add(component);
-}
-
-export function disableDebugFor(component: string): void {
-  debugConfig.components.delete(component);
 }
 
 // Global debug control
@@ -74,4 +72,10 @@ export function enableAllDebug(): void {
 
 export function disableAllDebug(): void {
   debugConfig.enabled = false;
+}
+
+// Initialize debug in development mode
+if (isDevelopment) {
+  console.log("[Debug] Debug utilities initialized in development mode");
+  enableAllDebug();
 }
