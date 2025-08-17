@@ -105,7 +105,7 @@
                     @validation-success="handleValidationSuccess"
                     :ref="
                       (el) => {
-                        if (el) fieldRefs[fieldInfo.key] = el;
+                        if (el) fieldRefs[fieldInfo.key] = el as any;
                       }
                     "
                   />
@@ -183,11 +183,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
+import { createDebugLogger } from "../../utils/debug";
+import { CleanupManager } from "../../utils/cleanup";
 import { invoke } from "@tauri-apps/api/core";
 import SchemaField from "./SchemaField.vue";
 import type { AppSchema } from "../../types/schema";
+
 import { TAURI_COMMANDS } from "../../utils/tauri-commands";
 import type {
   FormData,
@@ -208,6 +211,22 @@ import {
   getFieldLayoutWithRef,
 } from "./layout-utils";
 import { fieldPathResolver } from "./ref-path-resolver";
+
+// Component reference types
+interface FormRef {
+  validate: () => boolean | Promise<boolean>;
+  resetValidation: () => void;
+  setTouched: (touched: boolean) => void;
+}
+
+interface FieldRef {
+  validate: () => boolean | string;
+  setTouched: (touched: boolean) => void;
+  clearValidation: () => void;
+  triggerValidation: () => { valid: boolean; error?: string };
+}
+
+type FieldRefs = Record<string, FieldRef>;
 
 // Constants
 const MAX_DEPTH = 10;
@@ -247,6 +266,8 @@ const emit = defineEmits<SchemaApiFormEmits>();
 
 // Quasar instance
 const $q = useQuasar();
+const debug = createDebugLogger("SchemaApiForm");
+const cleanup = new CleanupManager();
 
 // Reactive state
 const loading = ref(false);
@@ -257,8 +278,8 @@ const formData = ref<FormData>({});
 const originalData = ref<FormData>({});
 
 const compactMode = ref(props.compact);
-const fieldRefs = ref<Record<string, any>>({}); // Store field component references
-const formRef = ref<any>(null); // Form reference for validation
+const fieldRefs = ref<FieldRefs>({}); // Store field component references
+const formRef = ref<FormRef | null>(null); // Form reference for validation
 
 // Computed properties
 const canSubmit = computed((): boolean => {
@@ -373,14 +394,14 @@ const loadSchema = async (): Promise<void> => {
     schema.value = schemaData as AppSchema;
 
     // Format and output schema JSON
-    console.log(`[SchemaApiForm] Schema loaded for: ${props.schemaId}`);
-    console.log(JSON.stringify(schemaData, null, 2));
+    debug.log(`Schema loaded for: ${props.schemaId}`);
+    debug.log("Schema data", schemaData);
 
     initializeFormData();
     emit("schema-loaded", schema.value);
   } catch (err) {
     error.value = `Failed to load schema: ${err}`;
-    console.error("[SchemaApiForm] Schema load error:", err);
+    debug.error("Schema load error", err);
     emit("schema-error", error.value);
   } finally {
     loading.value = false;
@@ -511,16 +532,20 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
 
   try {
     // Set a timeout to reset submitting state if callback is not called
-    const timeoutId = setTimeout(() => {
-      console.warn(
-        "[SchemaApiForm] Submit callback not called within timeout, resetting submitting state"
-      );
-      submitting.value = false;
-    }, 10000); // 10 second timeout
+    cleanup.addTimeout(
+      "submit-timeout",
+      () => {
+        debug.warn(
+          "Submit callback not called within timeout, resetting submitting state"
+        );
+        submitting.value = false;
+      },
+      10000
+    ); // 10 second timeout
 
     // Emit submit event with callback for result
     emit("submit", formData.value, (success: boolean, message?: string) => {
-      clearTimeout(timeoutId); // Clear the timeout
+      cleanup.remove("submit-timeout"); // Clear the timeout
       if (success) {
         // Update original data when submit is successful
         updateOriginalData();
@@ -537,7 +562,7 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
     });
   } catch (err) {
     const errorMessage = `Submit failed: ${err}`;
-    console.error("[SchemaApiForm] Submit error:", err);
+    debug.error("Submit error", err);
     showNotification("negative", errorMessage);
     submitting.value = false;
   }
@@ -599,6 +624,11 @@ const resetFormData = (): void => {
 const updateOriginalData = (): void => {
   originalData.value = JSON.parse(JSON.stringify(formData.value));
 };
+
+// Cleanup on component unmount
+onUnmounted(() => {
+  cleanup.cleanup();
+});
 
 // Watchers
 watch(

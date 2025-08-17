@@ -122,7 +122,7 @@ export const routes = ((): RouteRecordRaw[] => {
     });
 
     if (indexModule) {
-      console.log("Found index.vue, using it as root route");
+      // Found index.vue, using it as root route
       routes.unshift({
         path: "/",
         name: "Home",
@@ -130,9 +130,7 @@ export const routes = ((): RouteRecordRaw[] => {
         meta: defaultHomeMeta,
       });
     } else {
-      console.warn(
-        "No root route found and no index.vue available, creating a simple fallback route"
-      );
+      // No root route found and no index.vue available, creating a simple fallback route
       routes.unshift({
         path: "/",
         name: "Home",

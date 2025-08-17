@@ -128,7 +128,7 @@ const depth1Routes = getRoutesByDepth(1);
 
 // Test route functionality
 const testPath = ref("/");
-const testResult = ref<any>(null);
+const testResult = ref<unknown>(null);
 
 // Table columns definition for route groups
 const routeInfoColumns = [

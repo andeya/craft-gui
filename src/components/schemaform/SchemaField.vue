@@ -143,6 +143,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { AppSchema } from "../../types/schema";
+
 import type {
   FieldValue,
   ValidationRule,
@@ -167,6 +168,13 @@ const props = withDefaults(defineProps<SchemaFieldProps>(), {
 });
 
 const emit = defineEmits<SchemaFieldEmits>();
+
+// Component reference types
+interface InputRef {
+  validate: () => boolean | string;
+  setTouched: (touched: boolean) => void;
+  clearValidation: () => void;
+}
 
 // Internal state
 const internalValue = ref<FieldValue>(props.modelValue);
@@ -714,10 +722,10 @@ const validateField = (): boolean => {
 };
 
 // Refs for input components
-const stringInputRef = ref<any>(null);
-const selectInputRef = ref<any>(null);
-const numberInputRef = ref<any>(null);
-const arrayInputRef = ref<any>(null);
+const stringInputRef = ref<InputRef | null>(null);
+const selectInputRef = ref<InputRef | null>(null);
+const numberInputRef = ref<InputRef | null>(null);
+const arrayInputRef = ref<InputRef | null>(null);
 
 // Method to trigger validation and return result
 const triggerValidation = (): { valid: boolean; error?: string } => {

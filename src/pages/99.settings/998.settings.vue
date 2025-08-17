@@ -5,7 +5,7 @@
         mode="config"
         :schema-id="schemaId"
         :show-diff-before-save="'toml'"
-        :show-modified-indicators="true"
+        :show-modification-indicator="true"
         :compact="true"
         @save="handleSave"
         @notify="handleNotify"
@@ -28,8 +28,8 @@ onMounted(() => {
   schemaId.value = "AppConfig";
 });
 
-const handleSave = (data: any) => {
-  console.log("Settings saved:", data);
+const handleSave = (_data: unknown) => {
+  // Settings saved successfully
 };
 
 const handleNotify = ({ type, message }: { type: string; message: string }) => {

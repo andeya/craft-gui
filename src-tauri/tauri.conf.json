@@ -27,7 +27,7 @@
       "csp": {
         "default-src": "*",
         "script-src": "* 'unsafe-inline' 'unsafe-eval' blob: data:",
-        "connect-src": "* 'self' 'unsafe-inline' 'unsafe-eval' blob: data: ipc://*",
+        "connect-src": "* 'self' 'unsafe-inline' 'unsafe-eval' blob: data: ipc://* ipc://localhost/* ipc://localhost/appdata_cmd_*",
         "font-src": "*",
         "img-src": "* blob: data:",
         "style-src": "* 'unsafe-inline'"

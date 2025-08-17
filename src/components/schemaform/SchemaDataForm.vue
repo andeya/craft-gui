@@ -195,7 +195,7 @@
                     @validation-success="handleValidationSuccess(fieldInfo.key)"
                     :ref="
                       (el) => {
-                        if (el) fieldRefs[fieldInfo.key] = el;
+                        if (el) fieldRefs[fieldInfo.key] = el as any;
                       }
                     "
                   />
@@ -269,9 +269,11 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import { invoke } from "@tauri-apps/api/core";
+import { createDebugLogger } from "@/utils/debug";
 import SchemaField from "@/components/schemaform/SchemaField.vue";
 import TextDiffDialog from "@/components/TextDiffDialog.vue";
 import type { AppSchema } from "@/types/schema";
+
 import { TAURI_COMMANDS } from "@/utils/tauri-commands";
 import TOML from "smol-toml";
 
@@ -304,6 +306,22 @@ interface FormData {
   [key: string]: any;
 }
 
+// Component reference types
+interface FormRef {
+  validate: () => boolean | Promise<boolean>;
+  resetValidation: () => void;
+  setTouched: (touched: boolean) => void;
+}
+
+interface FieldRef {
+  validate: () => boolean | string;
+  setTouched: (touched: boolean) => void;
+  clearValidation: () => void;
+  triggerValidation: () => { valid: boolean; error?: string };
+}
+
+type FieldRefs = Record<string, FieldRef>;
+
 interface Props {
   // Basic props
   schemaId?: string;
@@ -333,6 +351,9 @@ interface Props {
 
   // Field layout configuration
   fieldLayoutConfig?: FieldLayoutConfig[];
+
+  // Auto-load control
+  autoLoad?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -352,23 +373,27 @@ const props = withDefaults(defineProps<Props>(), {
   showDiffBeforeSave: "toml", // Default to TOML format
   showModificationIndicator: true, // Show modification indicators
   fieldLayoutConfig: () => [], // Field layout configuration
+  autoLoad: true, // Auto-load data when component mounts
 });
 
-const emit = defineEmits([
-  "update:model-value",
-  "save",
-  "load",
-  "delete",
-  "reload",
-  "prepare",
-  "schema-change",
-  "key-change",
-  "validation-error",
-  "validation-success",
-  "notify",
-]);
+const emit = defineEmits<{
+  "update:model-value": [value: any];
+  save: [data: any];
+  load: [data: any];
+  delete: [];
+  reload: [data?: any];
+  prepare: [data: any];
+  "schema-change": [schemaId: string];
+  "key-change": [key: number];
+  "validation-error": [key: string, error: string];
+  "validation-success": [key: string];
+  notify: [notification: { type: string; message: string }];
+  reset: [];
+  create: [];
+}>();
 
 const $q = useQuasar();
+const debug = createDebugLogger("SchemaDataForm");
 
 // Notification helper function
 const showNotification = (type: string, message: string) => {
@@ -387,8 +412,8 @@ const selectedSchema = ref("");
 const currentDataKey = ref(props.dataKey);
 const compactMode = ref(props.compact);
 const isNewMode = ref(false); // Track if we're in "new" mode
-const fieldRefs = ref<Record<string, any>>({}); // Store field component references
-const formRef = ref<any>(null); // Form reference for validation
+const fieldRefs = ref<FieldRefs>({}); // Store field component references
+const formRef = ref<FormRef | null>(null); // Form reference for validation
 const showDiffDialog = ref(false); // Control diff dialog visibility
 
 // ===== Helper Functions =====
@@ -584,13 +609,13 @@ const loadSchema = async (schemaId: string, showDialog = false) => {
     schema.value = schemaData as AppSchema;
 
     // Format and output schema JSON
-    console.log(`[SchemaDataForm] Schema loaded for: ${schemaId}`);
-    console.log(JSON.stringify(schemaData, null, 2));
+    debug.log(`Schema loaded for: ${schemaId}`);
+    debug.log("Schema data", schemaData);
 
     emit("schema-change", schemaId);
   } catch (err) {
     error.value = `${getErrorMessage("FAILED_TO_LOAD_SCHEMA")}: ${err}`;
-    console.error("Schema load error:", err);
+    debug.error("Schema load error", err);
     if (showDialog) {
       $q.dialog({
         title: getDialogTitle("ERROR"),
@@ -654,7 +679,7 @@ const loadData = async (showDialog = false) => {
     }
   } catch (err) {
     error.value = `${getErrorMessage("FAILED_TO_LOAD_DATA")}: ${err}`;
-    console.error("Data load error:", err);
+    debug.error("Data load error", err);
     if (showDialog) {
       $q.dialog({
         title: getDialogTitle("ERROR"),
@@ -685,7 +710,7 @@ const diffStringify = (obj: object) => {
     try {
       return props.showDiffBeforeSave(obj);
     } catch (error) {
-      console.warn("Custom diff function failed, falling back to JSON:", error);
+      debug.warn("Custom diff function failed, falling back to JSON", error);
       return JSON.stringify(obj, null, 2);
     }
   }
@@ -737,7 +762,7 @@ const saveData = async () => {
     return;
   }
 
-  emit("validation-success");
+  emit("validation-success", "");
 
   // Schema validation is now handled by the backend
 
@@ -793,7 +818,7 @@ const performSave = async () => {
       "negative",
       `${getErrorMessage("FAILED_TO_SAVE_DATA")}: ${err}`
     );
-    console.error("Data save error:", err);
+    debug.error("Data save error", err);
   } finally {
     loading.value = false;
   }
@@ -835,14 +860,14 @@ const createNew = async () => {
     );
 
     emit("prepare", formData.value); // Emit prepare event instead of create
-    emit("key-change", nextKey);
+    emit("key-change", nextKey as number);
   } catch (err) {
     error.value = `${getErrorMessage("FAILED_TO_PREPARE_NEW_DATA")}: ${err}`;
     showNotification(
       "negative",
       `${getErrorMessage("FAILED_TO_PREPARE_NEW_DATA")}: ${err}`
     );
-    console.error("Data creation preparation error:", err);
+    debug.error("Data creation preparation error", err);
   } finally {
     loading.value = false;
   }
@@ -882,7 +907,7 @@ const deleteData = async () => {
         "negative",
         `${getErrorMessage("FAILED_TO_DELETE_DATA")}: ${err}`
       );
-      console.error("Data delete error:", err);
+      debug.error("Data delete error", err);
     } finally {
       loading.value = false;
     }
@@ -918,7 +943,7 @@ const handleReloadWithFeedback = async () => {
   // Check if there was an error
   if (error.value) {
     // Error was already shown via dialog, just log it
-    console.error("Reload error:", error.value);
+    debug.error("Reload error", error.value);
   } else {
     // Show success notification
     showNotification("positive", getSuccessMessage("DATA_RELOADED"));

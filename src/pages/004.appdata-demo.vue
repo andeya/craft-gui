@@ -333,13 +333,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
+import { CleanupManager } from "@/utils/cleanup";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 import SchemaApiForm from "@/components/schemaform/SchemaApiForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
 
 const $q = useQuasar();
+const cleanup = new CleanupManager();
 
 // Event log for demonstration
 interface EventLogItem {
@@ -354,7 +356,7 @@ const availableSchemas = [...DEFAULT_AVAILABLE_SCHEMAS];
 
 // SchemaApiForm demo state
 const selectedApiSchema = ref<string>("");
-const apiFormInitialData = ref<Record<string, any>>({});
+const apiFormInitialData = ref<Record<string, unknown>>({});
 const apiSubmitButtonText = ref("Submit");
 const apiSubmitButtonIcon = ref("send");
 const apiResetButtonText = ref("Reset");
@@ -367,12 +369,12 @@ const apiColumns = ref(0); // 0=auto, 1=single column, 2=double column
 const dataFormColumns = ref(0); // 0=auto, 1=single column, 2=double column
 
 // Event handlers
-const handleSave = (data: any) => {
+const handleSave = (data: unknown) => {
   addEventLog(`✅ Data saved successfully: ${JSON.stringify(data, null, 2)}`);
   // Notification is handled by the AppDataForm component
 };
 
-const handleLoad = (data: any) => {
+const handleLoad = (data: unknown) => {
   if (data) {
     addEventLog(`📥 Data loaded: ${JSON.stringify(data, null, 2)}`);
   } else {
@@ -387,8 +389,8 @@ const handleDelete = () => {
   // Notification is handled by the AppDataForm component
 };
 
-const handleCreate = (data: any) => {
-  addEventLog(`✨ New data created: ${JSON.stringify(data, null, 2)}`);
+const handleCreate = () => {
+  addEventLog(`✨ New data created`);
   $q.notify({
     type: "positive",
     message: "New data created successfully!",
@@ -396,15 +398,15 @@ const handleCreate = (data: any) => {
   });
 };
 
-const handlePrepare = (data: any) => {
+const handlePrepare = (data: unknown) => {
   addEventLog(
     `📝 Form prepared for new data: ${JSON.stringify(data, null, 2)}`
   );
   // No notification here as the component already shows its own info notification
 };
 
-const handleReset = (data: any) => {
-  addEventLog(`🔄 Form reset to: ${JSON.stringify(data, null, 2)}`);
+const handleReset = () => {
+  addEventLog(`🔄 Form reset`);
 };
 
 const handleSchemaChange = (schemaId: string) => {
@@ -430,21 +432,25 @@ const resetApiForm = () => {
 };
 
 const handleApiSubmit = (
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   callback?: (success: boolean, message?: string) => void
 ) => {
   addEventLog(`🚀 API Form submitted: ${JSON.stringify(data, null, 2)}`);
   // Simulate API call delay
-  setTimeout(() => {
-    addEventLog(`✅ API call completed successfully`);
-    // Call the callback to reset the submitting state
-    if (callback) {
-      callback(true, "API call completed successfully");
-    }
-  }, 1000);
+  cleanup.addTimeout(
+    "api-simulate",
+    () => {
+      addEventLog(`✅ API call completed successfully`);
+      // Call the callback to reset the submitting state
+      if (callback) {
+        callback(true, "API call completed successfully");
+      }
+    },
+    1000
+  );
 };
 
-const handleApiReset = (originalData: any) => {
+const handleApiReset = (originalData: unknown) => {
   addEventLog(`🔄 API Form reset to: ${JSON.stringify(originalData, null, 2)}`);
 };
 
@@ -463,13 +469,19 @@ const handleApiValidationSuccess = () => {
   addEventLog(`✅ API Form validation passed`);
 };
 
-const handleApiSchemaLoaded = (schema: any) => {
-  addEventLog(`📋 API Form schema loaded: ${schema.title || "Untitled"}`);
+const handleApiSchemaLoaded = (schema: unknown) => {
+  const schemaObj = schema as { title?: string };
+  addEventLog(`📋 API Form schema loaded: ${schemaObj.title || "Untitled"}`);
 };
 
 const handleApiSchemaError = (error: string) => {
   addEventLog(`❌ API Form schema error: ${error}`);
 };
+
+// Cleanup on component unmount
+onUnmounted(() => {
+  cleanup.cleanup();
+});
 
 // Helper function to add events to log
 const addEventLog = (message: string) => {
