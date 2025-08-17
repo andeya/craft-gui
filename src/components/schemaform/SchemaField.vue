@@ -777,9 +777,11 @@ const handleArrayValueUpdate = (value: string | number | null): void => {
   const processedValue = convertValueToSchemaType(value, "array");
 
   internalValue.value = processedValue;
-  if (validateField()) {
-    emit("update:model-value", processedValue);
-  }
+  validateField(); // Still validate for UI feedback, but don't block updates
+
+  // Always emit update:model-value, even if validation fails
+  // This allows users to clear fields and reset them later
+  emit("update:model-value", processedValue);
 };
 
 // Nested object helpers
@@ -804,9 +806,11 @@ const handleNestedValueUpdate = (key: string, value: FieldValue): void => {
     [key]: value,
   };
   internalValue.value = updatedValue;
-  if (validateField()) {
-    emit("update:model-value", updatedValue);
-  }
+  validateField(); // Still validate for UI feedback, but don't block updates
+
+  // Always emit update:model-value, even if validation fails
+  // This allows users to clear fields and reset them later
+  emit("update:model-value", updatedValue);
 };
 
 const isNestedFieldModified = (key: string): boolean => {

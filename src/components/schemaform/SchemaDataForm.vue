@@ -266,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
 import { invoke } from "@tauri-apps/api/core";
 import { createDebugLogger } from "@/utils/debug";
@@ -660,6 +660,10 @@ const loadData = async (showDialog = false) => {
 
       // Schema validation is now handled by the backend
 
+      // Print loaded data to console in JSON format
+      debug.log("Data Form Load - Data:");
+      debug.log(JSON.stringify(data, null, 2));
+
       formData.value = data;
       originalData.value = JSON.parse(JSON.stringify(data));
       dataExists.value = true;
@@ -792,6 +796,10 @@ const performSave = async () => {
     const dataWithKey = { ...formData.value, id: key };
     const dataBytes = new TextEncoder().encode(JSON.stringify(dataWithKey));
 
+    // Print form data to console in JSON format
+    debug.log("Data Form Submit - Parameters:");
+    debug.log(JSON.stringify(dataWithKey, null, 2));
+
     const params = {
       schemaId: selectedSchema.value,
       data: Array.from(dataBytes),
@@ -848,6 +856,11 @@ const createNew = async () => {
     // Generate default values for new data using schema traversal
     if (schema.value) {
       const defaultData = initializeSchemaData(schema.value, schema.value, 10);
+
+      // Print default data to console in JSON format
+      debug.log("Data Form Create New - Default Data:");
+      debug.log(JSON.stringify(defaultData, null, 2));
+
       formData.value = defaultData;
       originalData.value = JSON.parse(JSON.stringify(defaultData));
     }
@@ -952,7 +965,9 @@ const handleReloadWithFeedback = async () => {
 };
 
 const updateFormData = (key: string, value: any) => {
+  debug.log(`Field update: ${key} =`, value);
   formData.value[key] = value;
+  debug.log("Updated formData:", formData.value);
   emit("update:model-value", formData.value);
 };
 
@@ -1107,6 +1122,12 @@ onMounted(async () => {
     // Always try to load data when schema is available
     await loadData();
   }
+});
+
+// Cleanup on component unmount
+onUnmounted(() => {
+  // Clear field refs to prevent memory leaks
+  fieldRefs.value = {};
 });
 
 // Expose methods for parent components

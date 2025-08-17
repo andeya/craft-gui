@@ -185,23 +185,20 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
-import { createDebugLogger } from "../../utils/debug";
-import { CleanupManager } from "../../utils/cleanup";
+import { createDebugLogger } from "@/utils/debug";
+import { CleanupManager } from "@/utils/cleanup";
 import { invoke } from "@tauri-apps/api/core";
 import SchemaField from "./SchemaField.vue";
-import type { AppSchema } from "../../types/schema";
+import type { AppSchema } from "@/types/schema";
 
-import { TAURI_COMMANDS } from "../../utils/tauri-commands";
+import { TAURI_COMMANDS } from "@/utils/tauri-commands";
 import type {
   FormData,
   SchemaApiFormProps,
   SchemaApiFormEmits,
   // FieldLayoutConfig,
 } from "./types";
-import {
-  initializeSchemaData,
-  resolveSchemaRef,
-} from "../../utils/schema-utils";
+import { initializeSchemaData, resolveSchemaRef } from "@/utils/schema-utils";
 import {
   getFieldLayout,
   // getRootLayout,
@@ -463,7 +460,9 @@ const isNestedFieldModified = (
 };
 
 const handleFieldUpdate = (key: string, value: any): void => {
+  debug.log(`Field update: ${key} =`, value);
   formData.value[key] = value;
+  debug.log("Updated formData:", formData.value);
 };
 
 const showNotification = (
@@ -526,6 +525,10 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
       return; // Validation failed, don't proceed
     }
   }
+
+  // Print form data to console in JSON format
+  debug.log("API Form Submit - Parameters:");
+  debug.log(JSON.stringify(formData.value, null, 2));
 
   // Set submitting state
   submitting.value = true;
@@ -628,6 +631,8 @@ const updateOriginalData = (): void => {
 // Cleanup on component unmount
 onUnmounted(() => {
   cleanup.cleanup();
+  // Clear field refs to prevent memory leaks
+  fieldRefs.value = {};
 });
 
 // Watchers

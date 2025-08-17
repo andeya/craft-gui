@@ -276,21 +276,60 @@ export function getSchemaZeroValue(schema: AppSchema): any {
 
 /**
  * Initialize schema data with defaults and zero values
+ * Enhanced to support examples from $defs and nested structures
  */
 export function initializeSchemaData(
   schema: AppSchema,
   rootSchema?: AppSchema,
   maxDepth: number = 10
 ): any {
-  // First, check if the root schema itself has examples
-  if (schema.examples && schema.examples.length > 0) {
-    return schema.examples[0];
+  // For object types, build the structure by traversing properties
+  if (schema.type === "object" && schema.properties) {
+    const result: any = {};
+
+    // Process each property
+    for (const [key, propSchema] of Object.entries(schema.properties)) {
+      // Resolve $ref references to get the actual schema
+      const resolvedPropSchema = rootSchema
+        ? resolveSchemaRef(propSchema, rootSchema, maxDepth)
+        : propSchema;
+
+      // Check if the resolved schema has examples
+      if (
+        resolvedPropSchema.examples &&
+        resolvedPropSchema.examples.length > 0
+      ) {
+        result[key] = resolvedPropSchema.examples[0];
+      } else if (resolvedPropSchema.default !== undefined) {
+        result[key] = resolvedPropSchema.default;
+      } else if (
+        resolvedPropSchema.type === "object" &&
+        resolvedPropSchema.properties
+      ) {
+        // Recursively initialize nested objects
+        result[key] = initializeSchemaData(
+          resolvedPropSchema,
+          rootSchema,
+          maxDepth - 1
+        );
+      } else {
+        result[key] = getSchemaZeroValue(resolvedPropSchema);
+      }
+    }
+
+    // If root schema has examples, merge them with the result
+    if (schema.examples && schema.examples.length > 0) {
+      const rootExample = schema.examples[0];
+      return { ...result, ...rootExample };
+    }
+
+    return result;
   }
 
-  // Otherwise, traverse the schema to build the data structure
+  // For other types, use the original logic
   return traverseSchema(
     schema,
-    (currentSchema) => {
+    (currentSchema, path) => {
       // For primitive types, use the priority: examples[0] > default > zero value
       if (currentSchema.examples && currentSchema.examples.length > 0) {
         return currentSchema.examples[0];
