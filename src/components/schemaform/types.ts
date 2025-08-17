@@ -51,7 +51,6 @@ export interface SchemaApiFormProps {
 
   // Form state
   disabled?: boolean;
-  loading?: boolean;
   readonly?: boolean;
 
   // Layout and display
@@ -72,13 +71,7 @@ export interface SchemaApiFormProps {
   clearButtonText?: string;
   clearButtonIcon?: string;
 
-  // Form styling
-  labelWidth?: string;
-  labelPosition?: "left" | "top" | "right";
-  size?: "small" | "medium" | "large";
-
-  // Notification control
-  showSuccessNotification?: boolean;
+  // Confirmation dialogs
   showResetConfirmation?: boolean; // Show confirmation dialog for reset
   showClearConfirmation?: boolean; // Show confirmation dialog for clear
 
@@ -95,10 +88,16 @@ export interface SchemaApiFormProps {
 export interface SchemaApiFormEmits {
   // Standard form events
   "update:model-value": [data: FormData];
+
+  // Submit events - Standard form pattern with callback
   submit: [
     data: FormData,
-    callback: (success: boolean, message?: string) => void
+    callback: (success: boolean, result?: any, error?: string) => void
   ];
+  "submit-success": [data: FormData, result: any];
+  "submit-error": [data: FormData, error: string];
+
+  // Form actions
   reset: [originalData: FormData]; // Emitted when form is reset to initial state
   clear: []; // Emitted when form is cleared
 
@@ -109,79 +108,4 @@ export interface SchemaApiFormEmits {
   // Schema events
   "schema-loaded": [schema: AppSchema];
   "schema-error": [error: string];
-}
-
-// SchemaDataForm component types (if needed)
-export interface SchemaDataFormProps {
-  // Add SchemaDataForm specific props here
-  schemaId?: string;
-  schema?: AppSchema;
-  modelValue?: FormData;
-  initialData?: FormData;
-  disabled?: boolean;
-  loading?: boolean;
-  readonly?: boolean;
-  columns?: number;
-  compact?: boolean;
-  showHeader?: boolean;
-  showNewButton?: boolean;
-  showReloadButton?: boolean;
-  showSaveButton?: boolean;
-  showDeleteButton?: boolean;
-  title?: string;
-  description?: string;
-
-  // Field layout configuration
-  fieldLayoutConfig?: FieldLayoutConfig[];
-}
-
-export interface SchemaDataFormEmits {
-  // Add SchemaDataForm specific emits here
-  "update:model-value": [data: FormData];
-  submit: [data: FormData];
-  cancel: [];
-  new: [];
-  reload: [];
-  save: [data: FormData];
-  delete: [key: number];
-  "validation-error": [errors: ValidationErrors];
-  "validation-success": [];
-  "schema-loaded": [schema: AppSchema];
-  "schema-error": [error: string];
-}
-
-// Utility types for form validation
-export interface ValidationContext {
-  fieldName: string;
-  schema: AppSchema;
-  value: unknown;
-  fieldPath?: string;
-}
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-// Component instance types for refs
-export interface SchemaApiFormInstance {
-  getFormData: () => FormData;
-  setFormData: (data: FormData) => void;
-  validate: () => boolean;
-  submit: () => Promise<void>;
-  reset: () => void;
-  loadSchema: () => Promise<void>;
-}
-
-export interface SchemaDataFormInstance {
-  getFormData: () => FormData;
-  setFormData: (data: FormData) => void;
-  validate: () => boolean;
-  submit: () => Promise<void>;
-  reset: () => void;
-  createNew: () => void;
-  reloadData: () => Promise<void>;
-  saveData: () => Promise<void>;
-  deleteData: () => Promise<void>;
 }

@@ -339,6 +339,7 @@ import { CleanupManager } from "@/utils/cleanup";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 import SchemaApiForm from "@/components/schemaform/SchemaApiForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
+import type { FormData } from "@/components/schemaform/types";
 
 const $q = useQuasar();
 const cleanup = new CleanupManager();
@@ -432,18 +433,44 @@ const resetApiForm = () => {
 };
 
 const handleApiSubmit = (
-  data: Record<string, unknown>,
-  callback?: (success: boolean, message?: string) => void
+  data: FormData,
+  callback: (success: boolean, result?: any, error?: string) => void
 ) => {
   addEventLog(`🚀 API Form submitted: ${JSON.stringify(data, null, 2)}`);
-  // Simulate API call delay
+
+  // Simulate API call delay with random success/failure for demo
+  const isSuccess = Math.random() > 0.2; // 80% success rate for demo
+
   cleanup.addTimeout(
     "api-simulate",
     () => {
-      addEventLog(`✅ API call completed successfully`);
-      // Call the callback to reset the submitting state
-      if (callback) {
-        callback(true, "API call completed successfully");
+      if (isSuccess) {
+        addEventLog(`✅ API call completed successfully`);
+
+        // Show success notification
+        $q.notify({
+          type: "positive",
+          message: "API call completed successfully!",
+          position: "top",
+          timeout: 3000,
+          icon: "check_circle",
+        });
+
+        // Call success callback to update form state
+        callback(true, { message: "API call simulated successfully" });
+      } else {
+        addEventLog(`❌ API call failed`);
+
+        // Show error notification
+        $q.notify({
+          type: "negative",
+          message: "API call failed! Please try again.",
+          position: "top",
+          icon: "error",
+        });
+
+        // Call error callback to update form state
+        callback(false, undefined, "Simulated API failure");
       }
     },
     1000

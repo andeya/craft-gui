@@ -201,9 +201,6 @@ import type {
 import { initializeSchemaData, resolveSchemaRef } from "@/utils/schema-utils";
 import {
   getFieldLayout,
-  // getRootLayout,
-  // getFieldColumns,
-  // getFieldSpan,
   getRootColumns,
   getFieldLayoutWithRef,
 } from "./layout-utils";
@@ -226,17 +223,12 @@ interface FieldRef {
 type FieldRefs = Record<string, FieldRef>;
 
 // Constants
-const MAX_DEPTH = 10;
-const NOTIFICATION_TIMEOUT = {
-  SUCCESS: 3000,
-  ERROR: 5000,
-};
+const MAX_DEPTH = 10; // Maximum depth for schema traversal
 
 const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   modelValue: () => ({}),
   initialData: () => ({}),
   disabled: false,
-  loading: false,
   readonly: false,
   columns: 0, // 0=auto, 1=single column, 2=double column, 3=triple column
   compact: false,
@@ -250,13 +242,11 @@ const props = withDefaults(defineProps<SchemaApiFormProps>(), {
   resetButtonIcon: "refresh",
   clearButtonText: "Clear",
   clearButtonIcon: "clear_all",
-  labelWidth: "120px",
-  labelPosition: "left",
-  size: "medium",
-  showSuccessNotification: true,
   maxHeight: "70vh", // Maximum height for the form container
   showModificationIndicator: false, // Show modification indicators
   fieldLayoutConfig: () => [], // Field layout configuration
+  showResetConfirmation: false, // Show confirmation dialog for reset
+  showClearConfirmation: false, // Show confirmation dialog for clear
 });
 
 const emit = defineEmits<SchemaApiFormEmits>();
@@ -462,24 +452,6 @@ const isNestedFieldModified = (
 const handleFieldUpdate = (key: string, value: any): void => {
   debug.log(`Field update: ${key} =`, value);
   formData.value[key] = value;
-  debug.log("Updated formData:", formData.value);
-};
-
-const showNotification = (
-  type: "positive" | "negative",
-  message: string
-): void => {
-  $q.notify({
-    type,
-    message,
-    position: "top",
-    timeout:
-      type === "positive"
-        ? NOTIFICATION_TIMEOUT.SUCCESS
-        : NOTIFICATION_TIMEOUT.ERROR,
-    html: true,
-    classes: "smart-notification",
-  });
 };
 
 const handleValidationError = (_error: string): void => {
@@ -526,47 +498,35 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
     }
   }
 
-  // Print form data to console in JSON format
-  debug.log("API Form Submit - Parameters:");
-  debug.log(JSON.stringify(formData.value, null, 2));
+  // Log form data for debugging
+  debug.log("API Form Submit - Parameters:", formData.value);
 
-  // Set submitting state
+  // Set submitting state internally
   submitting.value = true;
 
   try {
-    // Set a timeout to reset submitting state if callback is not called
-    cleanup.addTimeout(
-      "submit-timeout",
-      () => {
-        debug.warn(
-          "Submit callback not called within timeout, resetting submitting state"
-        );
-        submitting.value = false;
-      },
-      10000
-    ); // 10 second timeout
-
     // Emit submit event with callback for result
-    emit("submit", formData.value, (success: boolean, message?: string) => {
-      cleanup.remove("submit-timeout"); // Clear the timeout
-      if (success) {
-        // Update original data when submit is successful
-        updateOriginalData();
-        if (props.showSuccessNotification) {
-          showNotification(
-            "positive",
-            message || "Form submitted successfully"
-          );
+    emit(
+      "submit",
+      formData.value,
+      (success: boolean, result?: any, error?: string) => {
+        if (success) {
+          // Update original data when submit is successful
+          updateOriginalData();
+          // Emit success event
+          emit("submit-success", formData.value, result);
+        } else {
+          // Emit error event
+          emit("submit-error", formData.value, error || "Submit failed");
         }
-      } else if (message) {
-        showNotification("negative", message);
+        // Reset submitting state
+        submitting.value = false;
       }
-      submitting.value = false;
-    });
+    );
   } catch (err) {
     const errorMessage = `Submit failed: ${err}`;
     debug.error("Submit error", err);
-    showNotification("negative", errorMessage);
+    emit("submit-error", formData.value, errorMessage);
     submitting.value = false;
   }
 };
