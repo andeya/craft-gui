@@ -1,9 +1,5 @@
-use crate::{appdata::AppData, sled_db};
-use aarc::{Arc, AtomicArc, Guard};
-use reindeer::{AsBytes, Entity};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
 
 /// Application configuration root structure
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
@@ -12,7 +8,6 @@ use std::sync::OnceLock;
 pub struct AppConfig {
   /// Logging system configuration
   pub logging: LoggingConfig,
-
   /// Feature flags and limitations
   pub features: FeaturesConfig,
 }
@@ -24,7 +19,7 @@ pub struct LoggingConfig {
   /// Verbosity level for logging
   #[schemars(
         title = "Log Level",
-        example = LogLevel::Info,
+        example = LogLevel::Debug,
         description = "Logging verbosity level"
     )]
   pub level: LogLevel,
@@ -32,7 +27,7 @@ pub struct LoggingConfig {
   /// Enable or disable file logging
   #[schemars(
     title = "File Logging Enabled",
-    example = true,
+    example = false,
     description = "Whether to write logs to a file"
   )]
   pub file_logging: bool,
@@ -45,6 +40,17 @@ pub enum LogLevel {
   Info,
   Warn,
   Error,
+  Off,
+}
+
+impl Default for LogLevel {
+  fn default() -> Self {
+    if cfg!(debug_assertions) {
+      Self::Trace
+    } else {
+      Self::Info
+    }
+  }
 }
 
 /// Feature flags and operational limits
@@ -74,8 +80,8 @@ impl Default for AppConfig {
   fn default() -> Self {
     Self {
       logging: LoggingConfig {
-        level: LogLevel::Info,
-        file_logging: true,
+        level: LogLevel::default(),
+        file_logging: false,
       },
       features: FeaturesConfig {
         dark_mode: false,
@@ -83,65 +89,4 @@ impl Default for AppConfig {
       },
     }
   }
-}
-
-impl Entity for AppConfig {
-  type Key = u32;
-
-  fn store_name() -> &'static str {
-    "AppConfig"
-  }
-  fn get_key(&self) -> &Self::Key {
-    &0
-  }
-  fn set_key(&mut self, _key: &Self::Key) {}
-
-  fn save(&self, db: &reindeer::Db) -> reindeer::Result<()> {
-    save_db(self, db)?;
-    set_config(self.clone());
-    Ok(())
-  }
-}
-
-fn save_db(config: &AppConfig, db: &reindeer::Db) -> reindeer::Result<()> {
-  AppConfig::get_tree(db)?.insert(
-    &config.get_key().as_bytes(),
-    reindeer::bincode_serialize(config)?,
-  )?;
-  Ok(())
-}
-
-static CONFIG: OnceLock<AtomicArc<AppConfig>> = OnceLock::new();
-
-pub fn init_config() -> Result<(), String> {
-  let config = AppConfig::get_data(&0)?;
-  let config = if let Some(config) = config {
-    config
-  } else {
-    let config = AppConfig::default();
-    save_db(&config, sled_db()).map_err(|e| format!("Failed to create config: {:?}", e))?;
-    config
-  };
-  CONFIG
-    .set(AtomicArc::new(config))
-    .map_err(|e| format!("AppConfig already initialized: {:?}", *e.load().unwrap()))
-}
-
-pub fn get_config() -> Guard<AppConfig> {
-  CONFIG.get().unwrap().load().unwrap()
-}
-
-pub fn load_config() -> Result<Arc<AppConfig>, String> {
-  let config = AppConfig::get_data(&0)?.ok_or("Config not found")?;
-  Ok(set_config(config))
-}
-
-pub fn save_config(config: &AppConfig) -> Result<(), String> {
-  config.save_data()
-}
-
-fn set_config(config: AppConfig) -> Arc<AppConfig> {
-  let config = Arc::new(config);
-  CONFIG.get().unwrap().store(Some(&config));
-  config
 }

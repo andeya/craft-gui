@@ -1,5 +1,6 @@
 mod appdata;
 pub mod config;
+mod logger;
 mod storage;
 mod test;
 pub use appdata::AppData;
@@ -29,7 +30,6 @@ pub fn run() {
       appdata::appdata_cmd_remove_data,
       appdata::appdata_cmd_exists_data,
       appdata::appdata_cmd_find_next_available_key,
-      greet,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
@@ -37,52 +37,45 @@ pub fn run() {
 
 #[allow(unused_variables)]
 async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
-  if let Err(e) = init_log() {
-    eprintln!("Failed to initialize log: {}", e);
-    log::error!("Failed to initialize log: {}", e);
-    app.exit(1);
-    return;
-  }
+  let mut exit_code = 0;
+  exit_code += 1;
   let app_data_dir = match app.app_handle().path().app_data_dir() {
     Ok(dir) => dir,
     Err(e) => {
-      log::error!("Failed to get app data dir: {}", e);
-      app.exit(2);
+      eprintln!("Failed to get app data dir: {}", e);
+      app.exit(exit_code);
       return;
     }
   };
-
   #[cfg(debug_assertions)]
   {
     log::debug!("app_data_dir={}", app_data_dir.display());
   }
-
-  if let Err(e) = storage::init(app_data_dir).await {
-    log::error!("Failed to initialize storage: {}", e);
-    app.exit(3);
+  exit_code += 1;
+  if let Err(e) = storage::init(app_data_dir.clone()).await {
+    eprintln!("Failed to initialize storage: {}", e);
+    app.exit(exit_code);
     return;
   }
+  exit_code += 1;
   if let Err(e) = config::init_config() {
-    log::error!("Failed to initialize config: {}", e);
-    app.exit(4);
+    eprintln!("Failed to initialize config: {}", e);
+    app.exit(exit_code);
     return;
   }
+  exit_code += 1;
+  if let Err(e) = logger::init(app_data_dir.clone()) {
+    eprintln!("Failed to initialize logger: {}", e);
+    app.exit(exit_code);
+    return;
+  }
+  exit_code += 1;
   if let Err(e) = register_all_appdata().await {
     log::error!("Failed to register all appdata: {}", e);
-    app.exit(5);
+    app.exit(exit_code);
     return;
   }
   log::info!("Setup complete");
-}
-
-fn init_log() -> Result<(), log::SetLoggerError> {
-  env_logger::try_init()
-}
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-  format!("Hello {}! You've been greeted from Rust!", name)
 }
 
 async fn register_all_appdata() -> anyhow::Result<()> {
