@@ -94,8 +94,6 @@ export interface SchemaApiFormEmits {
     data: FormData,
     callback: (success: boolean, result?: any, error?: string) => void
   ];
-  "submit-success": [data: FormData, result: any];
-  "submit-error": [data: FormData, error: string];
 
   // Form actions
   reset: [originalData: FormData]; // Emitted when form is reset to initial state

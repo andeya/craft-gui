@@ -509,24 +509,17 @@ const handleSubmit = async (evt?: Event): Promise<void> => {
     emit(
       "submit",
       formData.value,
-      (success: boolean, result?: any, error?: string) => {
+      (success: boolean, _result?: any, _error?: string) => {
         if (success) {
           // Update original data when submit is successful
           updateOriginalData();
-          // Emit success event
-          emit("submit-success", formData.value, result);
-        } else {
-          // Emit error event
-          emit("submit-error", formData.value, error || "Submit failed");
         }
         // Reset submitting state
         submitting.value = false;
       }
     );
   } catch (err) {
-    const errorMessage = `Submit failed: ${err}`;
     debug.error("Submit error", err);
-    emit("submit-error", formData.value, errorMessage);
     submitting.value = false;
   }
 };
