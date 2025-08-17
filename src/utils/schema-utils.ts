@@ -329,7 +329,7 @@ export function initializeSchemaData(
   // For other types, use the original logic
   return traverseSchema(
     schema,
-    (currentSchema, path) => {
+    (currentSchema) => {
       // For primitive types, use the priority: examples[0] > default > zero value
       if (currentSchema.examples && currentSchema.examples.length > 0) {
         return currentSchema.examples[0];

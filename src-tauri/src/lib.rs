@@ -2,11 +2,9 @@ mod appdata;
 pub mod config;
 mod storage;
 mod test;
-mod utils;
 pub use appdata::AppData;
 pub use config::get_config;
 pub use storage::sled_db;
-pub use utils::is_default;
 
 #[allow(unused_imports)]
 use tauri::Manager;
