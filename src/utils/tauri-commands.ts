@@ -13,6 +13,10 @@ export const TAURI_COMMANDS = {
     EXISTS_DATA: "appdata_cmd_exists_data",
     FIND_NEXT_AVAILABLE_KEY: "appdata_cmd_find_next_available_key",
   },
+  // Config commands
+  CONFIG: {
+    PATH_RESOLVER: "config_cmd_path_resolver",
+  },
   // General commands
   GENERAL: {
     GREET: "greet",
