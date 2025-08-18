@@ -12,18 +12,6 @@ import {
 } from "@tauri-apps/plugin-clipboard-manager";
 import { Image as TauriImage } from "@tauri-apps/api/image";
 
-// Global Tauri API (when withGlobalTauri is enabled)
-declare global {
-  interface Window {
-    __TAURI__?: {
-      clipboardManager?: {
-        writeText: (text: string) => Promise<void>;
-        readText: () => Promise<string>;
-      };
-    };
-  }
-}
-
 // Platform detection
 const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
 const isWebView = isTauri;

@@ -150,31 +150,81 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useQuasar } from "quasar";
-import { invoke } from "@tauri-apps/api/core";
-import { TAURI_COMMANDS } from "@/utils/tauri-commands";
 import { copyToClipboard } from "@/utils/clipboard";
-import type { PathResolver, PathCategory, Result } from "@/types/path-resolver";
+import type { PathCategory, Result } from "@/types/path-resolver";
 
 const $q = useQuasar();
 
 // Reactive state
 const loading = ref(true);
 const error = ref("");
-const pathResolver = ref<PathResolver | null>(null);
+const pathData = ref<Record<string, Result<string, string>>>({});
 
-// Load path resolver data
-const loadPathResolver = async () => {
+// Load path data using Tauri path API
+const loadPathData = async () => {
   try {
     loading.value = true;
     error.value = "";
 
-    const data = await invoke<PathResolver>(
-      TAURI_COMMANDS.CONFIG.PATH_RESOLVER
+    // Check if Tauri path API is available
+    if (!window.__TAURI__?.path) {
+      throw new Error("Tauri path API not available");
+    }
+
+    const pathApi = window.__TAURI__.path;
+    const pathFunctions = [
+      { key: "home_dir", fn: pathApi.homeDir },
+      { key: "desktop_dir", fn: pathApi.desktopDir },
+      { key: "document_dir", fn: pathApi.documentDir },
+      { key: "download_dir", fn: pathApi.downloadDir },
+      { key: "picture_dir", fn: pathApi.pictureDir },
+      { key: "video_dir", fn: pathApi.videoDir },
+      { key: "audio_dir", fn: pathApi.audioDir },
+      { key: "public_dir", fn: pathApi.publicDir },
+      { key: "template_dir", fn: pathApi.templateDir },
+      { key: "app_config_dir", fn: pathApi.appConfigDir },
+      { key: "app_data_dir", fn: pathApi.appDataDir },
+      { key: "app_local_data_dir", fn: pathApi.appLocalDataDir },
+      { key: "app_cache_dir", fn: pathApi.appCacheDir },
+      { key: "app_log_dir", fn: pathApi.appLogDir },
+      { key: "resource_dir", fn: pathApi.resourceDir },
+      { key: "executable_dir", fn: pathApi.executableDir },
+      { key: "cache_dir", fn: pathApi.cacheDir },
+      { key: "local_data_dir", fn: pathApi.localDataDir },
+      { key: "data_dir", fn: pathApi.dataDir },
+      { key: "config_dir", fn: pathApi.configDir },
+      { key: "runtime_dir", fn: pathApi.runtimeDir },
+      { key: "temp_dir", fn: pathApi.tempDir },
+      { key: "font_dir", fn: pathApi.fontDir },
+    ];
+
+    // Load all path data
+    const results = await Promise.allSettled(
+      pathFunctions.map(async ({ key, fn }) => {
+        try {
+          const path = await fn();
+          return { key, result: { Ok: path } as Result<string, string> };
+        } catch (err) {
+          return {
+            key,
+            result: { Err: String(err) } as Result<string, string>,
+          };
+        }
+      })
     );
-    pathResolver.value = data;
+
+    // Process results
+    const newPathData: Record<string, Result<string, string>> = {};
+    results.forEach((result) => {
+      if (result.status === "fulfilled") {
+        newPathData[result.value.key] = result.value.result;
+      }
+    });
+
+    pathData.value = newPathData;
   } catch (err) {
-    error.value = `Failed to load path resolver: ${err}`;
-    console.error("Error loading path resolver:", err);
+    error.value = `Failed to load path data: ${err}`;
+    console.error("Error loading path data:", err);
   } finally {
     loading.value = false;
   }
@@ -217,7 +267,7 @@ const copyPathToClipboard = async (path: Result<string, string>) => {
 
 // Organize paths into categories
 const pathCategories = computed((): PathCategory[] => {
-  if (!pathResolver.value) return [];
+  if (!pathData.value || Object.keys(pathData.value).length === 0) return [];
 
   return [
     {
@@ -230,55 +280,55 @@ const pathCategories = computed((): PathCategory[] => {
           key: "home_dir",
           label: "Home Directory",
           description: "User's home directory",
-          value: pathResolver.value.home_dir,
+          value: pathData.value.home_dir || { Err: "Not loaded" },
         },
         {
           key: "desktop_dir",
           label: "Desktop",
           description: "Desktop directory",
-          value: pathResolver.value.desktop_dir,
+          value: pathData.value.desktop_dir || { Err: "Not loaded" },
         },
         {
           key: "document_dir",
           label: "Documents",
           description: "Documents directory",
-          value: pathResolver.value.document_dir,
+          value: pathData.value.document_dir || { Err: "Not loaded" },
         },
         {
           key: "download_dir",
           label: "Downloads",
           description: "Downloads directory",
-          value: pathResolver.value.download_dir,
+          value: pathData.value.download_dir || { Err: "Not loaded" },
         },
         {
           key: "picture_dir",
           label: "Pictures",
           description: "Pictures directory",
-          value: pathResolver.value.picture_dir,
+          value: pathData.value.picture_dir || { Err: "Not loaded" },
         },
         {
           key: "video_dir",
           label: "Videos",
           description: "Videos directory",
-          value: pathResolver.value.video_dir,
+          value: pathData.value.video_dir || { Err: "Not loaded" },
         },
         {
           key: "audio_dir",
           label: "Audio",
           description: "Audio directory",
-          value: pathResolver.value.audio_dir,
+          value: pathData.value.audio_dir || { Err: "Not loaded" },
         },
         {
           key: "public_dir",
           label: "Public",
           description: "Public directory",
-          value: pathResolver.value.public_dir,
+          value: pathData.value.public_dir || { Err: "Not loaded" },
         },
         {
           key: "template_dir",
           label: "Templates",
           description: "Templates directory",
-          value: pathResolver.value.template_dir,
+          value: pathData.value.template_dir || { Err: "Not loaded" },
         },
       ],
     },
@@ -292,43 +342,43 @@ const pathCategories = computed((): PathCategory[] => {
           key: "app_config_dir",
           label: "App Config",
           description: "Application configuration directory",
-          value: pathResolver.value.app_config_dir,
+          value: pathData.value.app_config_dir || { Err: "Not loaded" },
         },
         {
           key: "app_data_dir",
           label: "App Data",
           description: "Application data directory",
-          value: pathResolver.value.app_data_dir,
+          value: pathData.value.app_data_dir || { Err: "Not loaded" },
         },
         {
           key: "app_local_data_dir",
           label: "App Local Data",
           description: "Application local data directory",
-          value: pathResolver.value.app_local_data_dir,
+          value: pathData.value.app_local_data_dir || { Err: "Not loaded" },
         },
         {
           key: "app_cache_dir",
           label: "App Cache",
           description: "Application cache directory",
-          value: pathResolver.value.app_cache_dir,
+          value: pathData.value.app_cache_dir || { Err: "Not loaded" },
         },
         {
           key: "app_log_dir",
           label: "App Logs",
           description: "Application log directory",
-          value: pathResolver.value.app_log_dir,
+          value: pathData.value.app_log_dir || { Err: "Not loaded" },
         },
         {
           key: "resource_dir",
           label: "Resources",
           description: "Application resources directory",
-          value: pathResolver.value.resource_dir,
+          value: pathData.value.resource_dir || { Err: "Not loaded" },
         },
         {
           key: "executable_dir",
           label: "Executable",
           description: "Application executable directory",
-          value: pathResolver.value.executable_dir,
+          value: pathData.value.executable_dir || { Err: "Not loaded" },
         },
       ],
     },
@@ -342,43 +392,43 @@ const pathCategories = computed((): PathCategory[] => {
           key: "cache_dir",
           label: "Cache",
           description: "System cache directory",
-          value: pathResolver.value.cache_dir,
+          value: pathData.value.cache_dir || { Err: "Not loaded" },
         },
         {
           key: "local_data_dir",
           label: "Local Data",
           description: "Local data directory",
-          value: pathResolver.value.local_data_dir,
+          value: pathData.value.local_data_dir || { Err: "Not loaded" },
         },
         {
           key: "data_dir",
           label: "Data",
           description: "Data directory",
-          value: pathResolver.value.data_dir,
+          value: pathData.value.data_dir || { Err: "Not loaded" },
         },
         {
           key: "config_dir",
           label: "Config",
           description: "Configuration directory",
-          value: pathResolver.value.config_dir,
+          value: pathData.value.config_dir || { Err: "Not loaded" },
         },
         {
           key: "runtime_dir",
           label: "Runtime",
           description: "Runtime directory",
-          value: pathResolver.value.runtime_dir,
+          value: pathData.value.runtime_dir || { Err: "Not loaded" },
         },
         {
           key: "temp_dir",
           label: "Temp",
           description: "Temporary directory",
-          value: pathResolver.value.temp_dir,
+          value: pathData.value.temp_dir || { Err: "Not loaded" },
         },
         {
           key: "font_dir",
           label: "Fonts",
           description: "Font directory",
-          value: pathResolver.value.font_dir,
+          value: pathData.value.font_dir || { Err: "Not loaded" },
         },
       ],
     },
@@ -407,7 +457,7 @@ const errorPaths = computed(() => {
 
 // Load data on mount
 onMounted(() => {
-  loadPathResolver();
+  loadPathData();
 });
 </script>
 

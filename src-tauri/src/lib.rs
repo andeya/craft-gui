@@ -23,7 +23,6 @@ pub fn run() {
     })
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
-      config::config_cmd_path_resolver,
       appdata::appdata_cmd_schema_ids,
       appdata::appdata_cmd_schemas,
       appdata::appdata_cmd_get_schema,
@@ -60,7 +59,7 @@ async fn setup<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     return;
   }
   exit_code += 1;
-  if let Err(e) = config::init_config(app.app_handle().path()) {
+  if let Err(e) = config::init_config() {
     eprintln!("Failed to initialize config: {}", e);
     app.exit(exit_code);
     return;

@@ -1,17 +1,10 @@
-mod apppath;
 mod data;
-pub use apppath::{path_resolver, PathResolver};
 pub use data::*;
 
 use crate::{appdata::AppData, sled_db};
 use aarc::{Arc, AtomicArc, Guard};
 use reindeer::{AsBytes, Entity};
 use std::sync::{Mutex, OnceLock};
-
-#[tauri::command]
-pub async fn config_cmd_path_resolver() -> &'static PathResolver {
-  path_resolver()
-}
 
 impl Entity for AppConfig {
   type Key = u32;
@@ -41,10 +34,7 @@ fn save_db(config: &AppConfig, db: &reindeer::Db) -> reindeer::Result<()> {
 
 static CONFIG: OnceLock<AtomicArc<AppConfig>> = OnceLock::new();
 
-pub fn init_config<R: tauri::Runtime>(
-  path_resolver: &tauri::path::PathResolver<R>,
-) -> Result<(), String> {
-  apppath::init_path_resolver(path_resolver);
+pub fn init_config() -> Result<(), String> {
   let config = AppConfig::get_data(&0)?;
   let config = if let Some(config) = config {
     config
