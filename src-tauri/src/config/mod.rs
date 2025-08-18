@@ -1,9 +1,9 @@
 mod data;
 pub use data::*;
 
-use crate::{appdata::AppData, sled_db};
+use crate::{AppEntity, RawEntity};
 use aarc::{Arc, AtomicArc, Guard};
-use reindeer::{AsBytes, Entity};
+use reindeer::Entity;
 use std::sync::{Mutex, OnceLock};
 
 impl Entity for AppConfig {
@@ -18,18 +18,10 @@ impl Entity for AppConfig {
   fn set_key(&mut self, _key: &Self::Key) {}
 
   fn save(&self, db: &reindeer::Db) -> reindeer::Result<()> {
-    save_db(self, db)?;
+    unsafe { RawEntity::from_ref(self).save(db)? };
     set_config(self.clone());
     Ok(())
   }
-}
-
-fn save_db(config: &AppConfig, db: &reindeer::Db) -> reindeer::Result<()> {
-  AppConfig::get_tree(db)?.insert(
-    &config.get_key().as_bytes(),
-    reindeer::bincode_serialize(config)?,
-  )?;
-  Ok(())
 }
 
 static CONFIG: OnceLock<AtomicArc<AppConfig>> = OnceLock::new();
@@ -40,7 +32,7 @@ pub fn init_config() -> Result<(), String> {
     config
   } else {
     let config = AppConfig::default();
-    save_db(&config, sled_db()).map_err(|e| format!("Failed to create config: {:?}", e))?;
+    unsafe { RawEntity::from_ref(&config).save_and_flush()? };
     config
   };
   CONFIG
@@ -60,7 +52,7 @@ pub fn load_config() -> Result<Arc<AppConfig>, String> {
 }
 
 pub fn save_config(config: &AppConfig) -> Result<(), String> {
-  config.save_data()
+  config.save_and_flush()
 }
 
 fn set_config(config: AppConfig) -> Arc<AppConfig> {

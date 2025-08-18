@@ -1,11 +1,9 @@
-mod appdata;
 pub mod config;
 mod logger;
 mod storage;
 mod test;
-pub use appdata::AppData;
 pub use config::get_config;
-pub use storage::sled_db;
+pub use storage::*;
 
 #[allow(unused_imports)]
 use tauri::Manager;
@@ -34,14 +32,14 @@ pub fn run() {
     })
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
-      appdata::appdata_cmd_schema_ids,
-      appdata::appdata_cmd_schemas,
-      appdata::appdata_cmd_get_schema,
-      appdata::appdata_cmd_get_data,
-      appdata::appdata_cmd_save_data,
-      appdata::appdata_cmd_remove_data,
-      appdata::appdata_cmd_exists_data,
-      appdata::appdata_cmd_find_next_available_key,
+      storage::appdata_cmd_schema_ids,
+      storage::appdata_cmd_schemas,
+      storage::appdata_cmd_get_schema,
+      storage::appdata_cmd_get_data,
+      storage::appdata_cmd_save_data,
+      storage::appdata_cmd_remove_data,
+      storage::appdata_cmd_exists_data,
+      storage::appdata_cmd_find_next_available_key,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
