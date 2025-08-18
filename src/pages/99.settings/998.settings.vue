@@ -6,7 +6,7 @@
         :schema-id="schemaId"
         :show-diff-before-save="'toml'"
         :show-modification-indicator="true"
-        :compact="true"
+        :compact="compactConfig"
         @save="handleSave"
         @notify="handleNotify"
       />
@@ -18,9 +18,15 @@
 import { ref, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
+import type { CompactConfig } from "@/components/schemaform/types";
 
 const $q = useQuasar();
 const schemaId = ref("AppConfig");
+
+// Compact configuration for settings form
+const compactConfig: CompactConfig = {
+  show: false,
+};
 
 // Initialize schema id on mount
 onMounted(() => {

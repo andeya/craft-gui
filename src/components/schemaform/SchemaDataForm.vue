@@ -20,6 +20,7 @@
               <div class="row q-col-gutter-sm">
                 <!-- Compact Mode Toggle -->
                 <QToggle
+                  v-if="compactConfig.show"
                   v-model="compactMode"
                   icon="compress"
                   color="primary"
@@ -301,7 +302,8 @@ import {
   UI_MESSAGES,
 } from "@/utils/ui-constants";
 import { initializeSchemaData, resolveSchemaRef } from "@/utils/schema-utils";
-import type { FieldLayoutConfig } from "./types";
+import type { FieldLayoutConfig, CompactConfig } from "./types";
+import { parseCompactConfig } from "./types";
 import {
   getFieldLayout,
   // getRootLayout,
@@ -347,7 +349,7 @@ interface Props {
 
   // Display control
   showHeader?: boolean;
-  compact?: boolean;
+  compact?: boolean | CompactConfig; // Compact mode configuration
   columns?: number; // 0=auto, 1=single column, 2=double column
 
   // Button control
@@ -426,7 +428,13 @@ const error = ref("");
 const dataExists = ref(false);
 const selectedSchema = ref("");
 const currentDataKey = ref(props.dataKey);
-const compactMode = ref(props.compact);
+// Parse compact configuration
+const compactConfig = computed(() => {
+  const isMobile = $q.screen.lt.md;
+  return parseCompactConfig(props.compact, isMobile);
+});
+
+const compactMode = ref(compactConfig.value.compact);
 const isNewMode = ref(false); // Track if we're in "new" mode
 const fieldRefs = ref<FieldRefs>({}); // Store field component references
 const formRef = ref<FormRef | null>(null); // Form reference for validation
@@ -1106,6 +1114,13 @@ watch(
       // Always load data when dataKey prop changes
       loadData();
     }
+  }
+);
+
+watch(
+  () => compactConfig.value,
+  (newConfig) => {
+    compactMode.value = newConfig.compact;
   }
 );
 

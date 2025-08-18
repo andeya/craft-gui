@@ -22,12 +22,13 @@
             <h2 class="text-xl font-semibold q-mb-md">SchemaDataForm Demo</h2>
             <p class="text-gray-600 q-mb-md">
               This demonstrates the SchemaDataForm component for data
-              management. Select a schema and data key to start editing.
+              management. Select a schema and data key to start editing. Try the
+              compact mode controls below to see the new configuration options.
             </p>
 
             <!-- Data Form Configuration -->
             <div class="row q-col-gutter-md q-mb-md">
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <QSelect
                   v-model="dataFormColumns"
                   :options="[
@@ -46,6 +47,20 @@
                   @update:model-value="handleDataFormColumnsChange"
                 />
               </div>
+              <div class="col-12 col-md-4">
+                <QToggle
+                  v-model="dataFormCompactConfig.compact"
+                  label="Compact Mode"
+                  color="primary"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <QToggle
+                  v-model="dataFormCompactConfig.show"
+                  label="Show Compact Toggle"
+                  color="secondary"
+                />
+              </div>
             </div>
 
             <SchemaDataForm
@@ -54,6 +69,7 @@
               :available-schemas="availableSchemas"
               :auto-load="false"
               :columns="dataFormColumns"
+              :compact="dataFormCompactConfig"
               :field-layout-config="[
                 // { fieldPath: undefined, columns: 3 }, // First level fields in 3 columns
                 // { fieldPath: 'complexField', columns: 3, span: 2 }, // Complex field sub-fields in 3 columns, spans 2 columns
@@ -80,7 +96,8 @@
             <p class="text-gray-600 q-mb-md">
               This demonstrates the SchemaApiForm component for API interface
               calls. Select a schema to see the form with default values and
-              validation.
+              validation. Try the compact mode controls in the configuration
+              panel.
             </p>
 
             <!-- Schema Selection and Layout Control -->
@@ -141,7 +158,7 @@
                 :clear-button-icon="apiClearButtonIcon"
                 :show-reset-button="true"
                 :show-clear-button="true"
-                :compact="apiCompactMode"
+                :compact="apiCompactConfig"
                 :columns="apiColumns"
                 @submit="handleApiSubmit"
                 @reset="handleApiReset"
@@ -214,9 +231,16 @@
 
                       <div class="col-12 col-md-6">
                         <QToggle
-                          v-model="apiCompactMode"
+                          v-model="apiCompactConfig.compact"
                           label="Compact Mode"
                           color="primary"
+                        />
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <QToggle
+                          v-model="apiCompactConfig.show"
+                          label="Show Compact Toggle"
+                          color="secondary"
                         />
                       </div>
                       <div class="col-12 col-md-6">
@@ -297,6 +321,21 @@
                   change the key to work with different records.
                 </p>
               </div>
+
+              <div>
+                <h3 class="text-lg font-medium q-mb-sm">
+                  6. Test Compact Mode Configuration
+                </h3>
+                <p class="text-gray-600">
+                  Use the compact mode controls to test the new configuration
+                  options:
+                  <br />• <strong>Compact Mode</strong>: Toggle between compact
+                  and normal layout <br />•
+                  <strong>Show Compact Toggle</strong>: Control whether the
+                  compact toggle button is visible <br />• Try different
+                  combinations to see how the forms adapt!
+                </p>
+              </div>
             </div>
           </QCardSection>
         </QCard>
@@ -339,7 +378,7 @@ import { CleanupManager } from "@/utils/cleanup";
 import SchemaDataForm from "@/components/schemaform/SchemaDataForm.vue";
 import SchemaApiForm from "@/components/schemaform/SchemaApiForm.vue";
 import { DEFAULT_AVAILABLE_SCHEMAS } from "@/utils/schema-constants";
-import type { FormData } from "@/components/schemaform/types";
+import type { FormData, CompactConfig } from "@/components/schemaform/types";
 
 const $q = useQuasar();
 const cleanup = new CleanupManager();
@@ -365,8 +404,18 @@ const apiResetButtonIcon = ref("refresh");
 const apiClearButtonText = ref("Clear");
 const apiClearButtonIcon = ref("clear_all");
 
-const apiCompactMode = ref(false);
+// Compact configuration for API form
+const apiCompactConfig = ref<CompactConfig>({
+  compact: false,
+  show: true,
+});
 const apiColumns = ref(0); // 0=auto, 1=single column, 2=double column
+
+// Compact configuration for Data form
+const dataFormCompactConfig = ref<CompactConfig>({
+  compact: false,
+  show: true,
+});
 const dataFormColumns = ref(0); // 0=auto, 1=single column, 2=double column
 
 // Event handlers

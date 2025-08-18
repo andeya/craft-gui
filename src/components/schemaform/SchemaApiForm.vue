@@ -43,7 +43,7 @@
                   {{ schema.description }}
                 </p>
               </div>
-              <div class="col-auto">
+              <div v-if="compactConfig.show" class="col-auto">
                 <!-- Compact Mode Toggle -->
                 <QToggle
                   v-model="compactMode"
@@ -192,12 +192,8 @@ import SchemaField from "./SchemaField.vue";
 import type { AppSchema } from "@/types/schema";
 
 import { TAURI_COMMANDS } from "@/utils/tauri-commands";
-import type {
-  FormData,
-  SchemaApiFormProps,
-  SchemaApiFormEmits,
-  // FieldLayoutConfig,
-} from "./types";
+import type { FormData, SchemaApiFormProps, SchemaApiFormEmits } from "./types";
+import { parseCompactConfig } from "./types";
 import { initializeSchemaData, resolveSchemaRef } from "@/utils/schema-utils";
 import {
   getFieldLayout,
@@ -264,7 +260,13 @@ const schema = ref<AppSchema | null>(null);
 const formData = ref<FormData>({});
 const originalData = ref<FormData>({});
 
-const compactMode = ref(props.compact);
+// Parse compact configuration
+const compactConfig = computed(() => {
+  const isMobile = $q.screen.lt.md;
+  return parseCompactConfig(props.compact, isMobile);
+});
+
+const compactMode = ref(compactConfig.value.compact);
 const fieldRefs = ref<FieldRefs>({}); // Store field component references
 const formRef = ref<FormRef | null>(null); // Form reference for validation
 
@@ -602,9 +604,9 @@ watch(
 );
 
 watch(
-  () => props.compact,
-  (newValue) => {
-    compactMode.value = newValue;
+  () => compactConfig.value,
+  (newConfig) => {
+    compactMode.value = newConfig.compact;
   }
 );
 
