@@ -31,6 +31,7 @@ anyhow = "1"
 toml = "0.9.5"
 reindeer = { version = "0.3.0", git = "https://github.com/andeya/reindeer-rs" }
 aarc = "0.3.2"
+tauri-plugin-clipboard-manager = "2"
 
 
 [features]

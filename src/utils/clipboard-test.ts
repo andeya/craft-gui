@@ -11,6 +11,8 @@ import {
   clipboardPlatformInfo,
   copyWithNotification,
   copyMultipleToClipboard,
+  tauriCopyToClipboard,
+  tauriReadFromClipboard,
 } from "./clipboard";
 
 /**
@@ -47,6 +49,19 @@ export async function testClipboardFunctionality() {
   ];
   const multipleResult = await copyMultipleToClipboard(multipleItems);
   console.log("Multiple copy result:", multipleResult);
+
+  console.log("\n=== Testing Tauri v2 Specific Functions ===");
+  const tauriCopyResult = await tauriCopyToClipboard("Tauri v2 test text");
+  console.log("Tauri copy result:", tauriCopyResult);
+
+  if (isClipboardReadSupported()) {
+    try {
+      const tauriReadText = await tauriReadFromClipboard();
+      console.log("Tauri read text:", tauriReadText);
+    } catch (error) {
+      console.error("Tauri read failed:", error);
+    }
+  }
 }
 
 /**

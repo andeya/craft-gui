@@ -1,7 +1,13 @@
 /**
  * Cross-platform clipboard utility
- * Compatible with Tauri v2 webview, browsers, and various platforms
+ * Using Tauri v2 clipboard-manager plugin with fallback for browsers
  */
+
+import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
+import {
+  clipboardPermissionValidator,
+  type ClipboardPermissions,
+} from "./clipboard-permissions";
 
 // Platform detection
 const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
@@ -14,31 +20,28 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isAndroid = /Android/.test(navigator.userAgent);
 
 /**
- * Copy text to clipboard with platform-specific fallbacks
+ * Copy text to clipboard using Tauri v2 clipboard-manager plugin
  * @param text - Text to copy to clipboard
  * @returns Promise<boolean> - Success status
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    // Method 1: Modern Clipboard API (supported in most modern browsers and Tauri webview)
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
+    // Check permissions first
+    if (!canWriteText()) {
+      console.error("Clipboard write permission denied");
+      return false;
+    }
+
+    // Method 1: Tauri v2 clipboard-manager plugin (primary method)
+    if (isTauri) {
+      await writeText(text);
       return true;
     }
 
-    // Method 2: Tauri-specific clipboard API (if available)
-    if (isTauri) {
-      try {
-        // Note: Tauri v2 doesn't have a built-in clipboard plugin by default
-        // We'll use the webview's clipboard API which should work
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (tauriError) {
-        console.warn(
-          "Tauri clipboard failed, falling back to fallback method:",
-          tauriError
-        );
-      }
+    // Method 2: Modern browser Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
     }
 
     // Method 3: Fallback for older browsers and edge cases
@@ -50,27 +53,27 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
- * Read text from clipboard with platform-specific fallbacks
+ * Read text from clipboard using Tauri v2 clipboard-manager plugin
  * @returns Promise<string> - Clipboard text content
  */
 export async function readFromClipboard(): Promise<string> {
   try {
-    // Method 1: Modern Clipboard API
+    // Check permissions first
+    if (!canReadText()) {
+      throw new Error("Clipboard read permission denied");
+    }
+
+    // Method 1: Tauri v2 clipboard-manager plugin (primary method)
+    if (isTauri) {
+      return await readText();
+    }
+
+    // Method 2: Modern browser Clipboard API
     if (navigator.clipboard && navigator.clipboard.readText) {
       return await navigator.clipboard.readText();
     }
 
-    // Method 2: Tauri-specific clipboard API
-    if (isTauri) {
-      try {
-        return await navigator.clipboard.readText();
-      } catch (tauriError) {
-        console.warn("Tauri clipboard read failed:", tauriError);
-        throw new Error("Clipboard read not supported in this environment");
-      }
-    }
-
-    throw new Error("Clipboard read not supported in this browser");
+    throw new Error("Clipboard read not supported in this environment");
   } catch (error) {
     console.error("Clipboard read failed:", error);
     throw error;
@@ -144,6 +147,8 @@ export const clipboardPlatformInfo = {
   userAgent: navigator.userAgent,
   clipboardSupported: isClipboardSupported(),
   clipboardReadSupported: isClipboardReadSupported(),
+  tauriVersion: isTauri ? "v2" : "none",
+  webviewType: isTauri ? "Tauri WebView" : "Browser",
 };
 
 /**
@@ -212,4 +217,93 @@ export async function copyMultipleToClipboard(
     console.error("Multiple clipboard copy failed:", error);
     return false;
   }
+}
+
+/**
+ * Tauri v2 specific clipboard functions
+ * These functions are optimized for Tauri v2 webview
+ */
+
+/**
+ * Copy text using Tauri v2 clipboard-manager plugin
+ * @param text - Text to copy
+ * @returns Promise<boolean> - Success status
+ */
+export async function tauriCopyToClipboard(text: string): Promise<boolean> {
+  if (!isTauri) {
+    console.warn("tauriCopyToClipboard called outside Tauri environment");
+    return await copyToClipboard(text);
+  }
+
+  try {
+    await writeText(text);
+    return true;
+  } catch (error) {
+    console.error("Tauri clipboard copy failed:", error);
+    return false;
+  }
+}
+
+/**
+ * Read text using Tauri v2 clipboard-manager plugin
+ * @returns Promise<string> - Clipboard text content
+ */
+export async function tauriReadFromClipboard(): Promise<string> {
+  if (!isTauri) {
+    console.warn("tauriReadFromClipboard called outside Tauri environment");
+    return await readFromClipboard();
+  }
+
+  try {
+    return await readText();
+  } catch (error) {
+    console.error("Tauri clipboard read failed:", error);
+    throw error;
+  }
+}
+
+/**
+ * Permission management functions
+ */
+
+/**
+ * Set clipboard permissions
+ * @param permissions - New permissions configuration
+ */
+export function setClipboardPermissions(
+  permissions: ClipboardPermissions
+): void {
+  clipboardPermissionValidator.updatePermissions(permissions);
+}
+
+/**
+ * Get current clipboard permissions
+ * @returns Current permissions configuration
+ */
+export function getClipboardPermissions(): ClipboardPermissions {
+  return clipboardPermissionValidator.getPermissions();
+}
+
+/**
+ * Check if write text permission is granted
+ * @returns boolean - Whether write text is allowed
+ */
+export function canWriteText(): boolean {
+  return clipboardPermissionValidator.canWriteText();
+}
+
+/**
+ * Check if read text permission is granted
+ * @returns boolean - Whether read text is allowed
+ */
+export function canReadText(): boolean {
+  return clipboardPermissionValidator.canReadText();
+}
+
+/**
+ * Check if clear clipboard permission is granted
+ * @returns boolean - Whether clear operation is allowed
+ */
+export function canClearClipboard(): boolean {
+  return clipboardPermissionValidator.canClear();
 }
