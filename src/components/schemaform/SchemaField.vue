@@ -39,7 +39,7 @@
         :dense="compact"
         :outlined="compact"
         @update:model-value="handleValueChange"
-        @blur="validateField"
+        @blur="() => validateField(false)"
       />
 
       <!-- Select Input -->
@@ -55,7 +55,7 @@
         :dense="compact"
         :outlined="compact"
         @update:model-value="handleValueChange"
-        @blur="validateField"
+        @blur="() => validateField(false)"
       />
 
       <!-- Number Input -->
@@ -74,7 +74,7 @@
         :dense="compact"
         :outlined="compact"
         @update:model-value="handleValueChange"
-        @blur="validateField"
+        @blur="() => validateField(false)"
       />
 
       <!-- Boolean Input -->
@@ -132,7 +132,7 @@
         :disabled="resolvedSchema.readOnly"
         :rules="validationRules"
         @update:model-value="handleArrayValueUpdate"
-        @blur="validateField"
+        @blur="() => validateField(false)"
       />
       <div class="text-caption text-grey-6 q-mt-xs">
         Enter a valid JSON array
@@ -402,11 +402,14 @@ const getCurrentSchemaType = (): string => {
 };
 
 // Unified validation function
-const validateValue = (value: any): { valid: boolean; error?: string } => {
+const validateValue = (
+  value: any,
+  validateNestedFields: boolean = true
+): { valid: boolean; error?: string } => {
   const schema = resolvedSchema.value;
 
   // For object types, we need to validate the object's required fields
-  if (schema.type === "object") {
+  if (schema.type === "object" && validateNestedFields) {
     if (schema.required && Array.isArray(schema.required)) {
       for (const requiredField of schema.required) {
         const fieldValue =
@@ -681,8 +684,9 @@ const validationRules = computed((): ValidationRule[] => {
   const rules: ValidationRule[] = [];
 
   // Add custom validation rule that uses our unified validation function
+  // For QForm validation, always validate nested fields
   rules.push((val: any): boolean | string => {
-    const result = validateValue(val);
+    const result = validateValue(val, true); // Always validate nested fields for form submission
     return result.valid || result.error || "Validation failed";
   });
 
@@ -708,8 +712,8 @@ watch(
 );
 
 // Validation function
-const validateField = (): boolean => {
-  const result = validateValue(internalValue.value);
+const validateField = (validateNested: boolean = true): boolean => {
+  const result = validateValue(internalValue.value, validateNested);
 
   if (result.valid) {
     validationError.value = "";
@@ -729,7 +733,9 @@ const numberInputRef = ref<InputRef | null>(null);
 const arrayInputRef = ref<InputRef | null>(null);
 
 // Method to trigger validation and return result
-const triggerValidation = (): { valid: boolean; error?: string } => {
+const triggerValidation = (
+  validateNested: boolean = true
+): { valid: boolean; error?: string } => {
   // Get the appropriate input ref based on the field type
   let inputRef: any = null;
   if (isStringInput.value) {
@@ -757,7 +763,7 @@ const triggerValidation = (): { valid: boolean; error?: string } => {
   }
 
   // Fallback to unified validation function
-  return validateValue(internalValue.value);
+  return validateValue(internalValue.value, validateNested);
 };
 
 // Value change handlers
@@ -766,7 +772,7 @@ const handleValueChange = (value: FieldValue): void => {
   const processedValue = convertValueToSchemaType(value, schemaType);
 
   internalValue.value = processedValue;
-  validateField(); // Still validate for UI feedback, but don't block updates
+  validateField(false); // Only validate current field, not nested fields
 
   // Always emit update:model-value, even if validation fails
   // This allows users to clear fields and reset them later
@@ -777,7 +783,7 @@ const handleArrayValueUpdate = (value: string | number | null): void => {
   const processedValue = convertValueToSchemaType(value, "array");
 
   internalValue.value = processedValue;
-  validateField(); // Still validate for UI feedback, but don't block updates
+  validateField(false); // Only validate current field, not nested fields
 
   // Always emit update:model-value, even if validation fails
   // This allows users to clear fields and reset them later
@@ -806,7 +812,7 @@ const handleNestedValueUpdate = (key: string, value: FieldValue): void => {
     [key]: value,
   };
   internalValue.value = updatedValue;
-  validateField(); // Still validate for UI feedback, but don't block updates
+  validateField(false); // Only validate current field, not nested fields
 
   // Always emit update:model-value, even if validation fails
   // This allows users to clear fields and reset them later

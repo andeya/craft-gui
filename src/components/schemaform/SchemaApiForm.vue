@@ -462,26 +462,19 @@ const handleValidationSuccess = (): void => {
   // Handled by individual SchemaField components
 };
 
-const validateForm = (): boolean => {
+const validateForm = async (): Promise<boolean> => {
   if (!schema.value?.properties) {
     return true;
   }
 
-  // Quasar form submission will automatically trigger validation for all fields
-  // We just need to check if any validation errors exist
-  let allValid = true;
+  // Validation is handled by QForm's automatic validation
+  // This method is kept for backward compatibility but delegates to QForm
+  if (formRef.value && typeof formRef.value.validate === "function") {
+    // QForm validation will automatically validate all fields including nested ones
+    return await formRef.value.validate();
+  }
 
-  // Get all field refs and trigger validation
-  Object.values(fieldRefs.value).forEach((fieldRef: any) => {
-    if (fieldRef && typeof fieldRef.triggerValidation === "function") {
-      const result = fieldRef.triggerValidation();
-      if (!result.valid) {
-        allValid = false;
-      }
-    }
-  });
-
-  return allValid;
+  return true;
 };
 
 const handleSubmit = async (evt?: Event): Promise<void> => {
@@ -629,7 +622,7 @@ defineExpose({
     formData.value = { ...data };
     originalData.value = JSON.parse(JSON.stringify(data));
   },
-  validate: validateForm,
+  validate: validateForm, // Now returns Promise<boolean>
   submit: handleSubmit,
   reset: resetFormData,
   updateOriginalData,

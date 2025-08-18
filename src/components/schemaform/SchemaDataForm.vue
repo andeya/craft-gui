@@ -760,27 +760,8 @@ const handleFormSubmit = async (evt?: Event) => {
 const saveData = async () => {
   if (!canSave.value) return;
 
-  // Perform frontend validation before saving
-  if (!schema.value?.properties) {
-    return;
-  }
-
-  // Trigger validation for all SchemaField components
-  let allValid = true;
-
-  // Get all field refs and trigger validation
-  Object.values(fieldRefs.value).forEach((fieldRef: any) => {
-    if (fieldRef && typeof fieldRef.triggerValidation === "function") {
-      const result = fieldRef.triggerValidation();
-      if (!result.valid) {
-        allValid = false;
-      }
-    }
-  });
-
-  if (!allValid) {
-    return;
-  }
+  // Validation is already handled by QForm in handleFormSubmit
+  // No need for additional validation here
 
   emit("validation-success", "");
 
