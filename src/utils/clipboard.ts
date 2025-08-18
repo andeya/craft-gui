@@ -3,11 +3,26 @@
  * Using Tauri v2 clipboard-manager plugin with fallback for browsers
  */
 
-import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import {
-  clipboardPermissionValidator,
-  type ClipboardPermissions,
-} from "./clipboard-permissions";
+  writeText,
+  readText,
+  writeImage,
+  readImage,
+  writeHtml,
+} from "@tauri-apps/plugin-clipboard-manager";
+import { Image as TauriImage } from "@tauri-apps/api/image";
+
+// Global Tauri API (when withGlobalTauri is enabled)
+declare global {
+  interface Window {
+    __TAURI__?: {
+      clipboardManager?: {
+        writeText: (text: string) => Promise<void>;
+        readText: () => Promise<string>;
+      };
+    };
+  }
+}
 
 // Platform detection
 const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
@@ -26,25 +41,25 @@ const isAndroid = /Android/.test(navigator.userAgent);
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    // Check permissions first
-    if (!canWriteText()) {
-      console.error("Clipboard write permission denied");
-      return false;
+    // Method 1: Global Tauri API (when withGlobalTauri is enabled)
+    if (isTauri && window.__TAURI__?.clipboardManager?.writeText) {
+      await window.__TAURI__.clipboardManager.writeText(text);
+      return true;
     }
 
-    // Method 1: Tauri v2 clipboard-manager plugin (primary method)
+    // Method 2: Tauri v2 clipboard-manager plugin (primary method)
     if (isTauri) {
       await writeText(text);
       return true;
     }
 
-    // Method 2: Modern browser Clipboard API
+    // Method 3: Modern browser Clipboard API
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
       return true;
     }
 
-    // Method 3: Fallback for older browsers and edge cases
+    // Method 4: Fallback for older browsers and edge cases
     return await fallbackCopyToClipboard(text);
   } catch (error) {
     console.error("Clipboard copy failed:", error);
@@ -54,29 +69,29 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 
 /**
  * Read text from clipboard using Tauri v2 clipboard-manager plugin
- * @returns Promise<string> - Clipboard text content
+ * @returns Promise<string | null> - Clipboard text content, null if not supported or empty
  */
-export async function readFromClipboard(): Promise<string> {
+export async function readFromClipboard(): Promise<string | null> {
   try {
-    // Check permissions first
-    if (!canReadText()) {
-      throw new Error("Clipboard read permission denied");
+    // Method 1: Global Tauri API (when withGlobalTauri is enabled)
+    if (isTauri && window.__TAURI__?.clipboardManager?.readText) {
+      return await window.__TAURI__.clipboardManager.readText();
     }
 
-    // Method 1: Tauri v2 clipboard-manager plugin (primary method)
+    // Method 2: Tauri v2 clipboard-manager plugin (primary method)
     if (isTauri) {
       return await readText();
     }
 
-    // Method 2: Modern browser Clipboard API
+    // Method 3: Modern browser Clipboard API
     if (navigator.clipboard && navigator.clipboard.readText) {
       return await navigator.clipboard.readText();
     }
 
-    throw new Error("Clipboard read not supported in this environment");
+    return null; // Not supported in this environment
   } catch (error) {
     console.error("Clipboard read failed:", error);
-    throw error;
+    return null;
   }
 }
 
@@ -149,41 +164,153 @@ export const clipboardPlatformInfo = {
   clipboardReadSupported: isClipboardReadSupported(),
   tauriVersion: isTauri ? "v2" : "none",
   webviewType: isTauri ? "Tauri WebView" : "Browser",
+  globalTauriAvailable: !!window.__TAURI__?.clipboardManager,
 };
 
 /**
- * Enhanced copy function with notification support
- * @param text - Text to copy
- * @param options - Copy options
+ * Copy HTML content to clipboard
+ * @param html - HTML content to copy
+ * @param altText - Optional plain text fallback
  * @returns Promise<boolean> - Success status
  */
-export async function copyWithNotification(
+export async function copyHtmlToClipboard(
+  html: string,
+  altText?: string
+): Promise<boolean> {
+  try {
+    // Method 1: Tauri v2 clipboard-manager plugin (primary method)
+    if (isTauri) {
+      await writeHtml(html, altText);
+      return true;
+    }
+
+    // Method 2: Modern browser Clipboard API
+    if (navigator.clipboard && navigator.clipboard.write) {
+      const clipboardItems = [
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([altText || html], { type: "text/plain" }),
+        }),
+      ];
+      await navigator.clipboard.write(clipboardItems);
+      return true;
+    }
+
+    // Method 3: Fallback to text copy
+    return await copyToClipboard(altText || html);
+  } catch (error) {
+    console.error("Clipboard HTML copy failed:", error);
+    return false;
+  }
+}
+
+/**
+ * Copy DOM element as HTML to clipboard
+ * @param element - DOM element to copy
+ * @param includeStyles - Whether to include computed styles
+ * @returns Promise<boolean> - Success status
+ */
+export async function copyElementAsHtml(
+  element: HTMLElement,
+  includeStyles: boolean = false
+): Promise<boolean> {
+  try {
+    let html = element.outerHTML;
+
+    if (includeStyles) {
+      // Get computed styles for the element
+      const styles = window.getComputedStyle(element);
+      const styleString = Array.from(styles)
+        .map((prop) => `${prop}: ${styles.getPropertyValue(prop)}`)
+        .join("; ");
+
+      // Insert styles into the element
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = html;
+      const firstElement = tempDiv.firstElementChild as HTMLElement;
+      if (firstElement) {
+        firstElement.style.cssText = styleString;
+        html = tempDiv.innerHTML;
+      }
+    }
+
+    // Extract text content for fallback
+    const textContent = element.textContent || element.innerText || "";
+
+    return await copyHtmlToClipboard(html, textContent);
+  } catch (error) {
+    console.error("Copy element as HTML failed:", error);
+    return false;
+  }
+}
+
+/**
+ * Copy rich text (HTML with formatting) to clipboard
+ * @param text - Text content
+ * @param options - Formatting options
+ * @returns Promise<boolean> - Success status
+ */
+export async function copyRichText(
   text: string,
   options: {
-    successMessage?: string;
-    errorMessage?: string;
-    showNotification?: boolean;
-    notify?: (type: string, message: string) => void;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: string;
+    fontSize?: string;
+    fontFamily?: string;
   } = {}
 ): Promise<boolean> {
-  const {
-    successMessage = "Copied to clipboard",
-    errorMessage = "Failed to copy to clipboard",
-    showNotification = true,
-    notify,
-  } = options;
+  try {
+    const { bold, italic, underline, color, fontSize, fontFamily } = options;
 
-  const success = await copyToClipboard(text);
+    let html = text;
 
-  if (showNotification && notify) {
-    if (success) {
-      notify("positive", successMessage);
-    } else {
-      notify("negative", errorMessage);
+    // Apply formatting
+    if (bold) html = `<strong>${html}</strong>`;
+    if (italic) html = `<em>${html}</em>`;
+    if (underline) html = `<u>${html}</u>`;
+
+    // Apply styles
+    const styles: string[] = [];
+    if (color) styles.push(`color: ${color}`);
+    if (fontSize) styles.push(`font-size: ${fontSize}`);
+    if (fontFamily) styles.push(`font-family: ${fontFamily}`);
+
+    if (styles.length > 0) {
+      html = `<span style="${styles.join("; ")}">${html}</span>`;
     }
-  }
 
-  return success;
+    return await copyHtmlToClipboard(html, text);
+  } catch (error) {
+    console.error("Copy rich text failed:", error);
+    return false;
+  }
+}
+
+/**
+ * Read HTML content from clipboard
+ * @returns Promise<string | null> - HTML content, null if not supported or no HTML content
+ */
+export async function readHtmlFromClipboard(): Promise<string | null> {
+  try {
+    // Method 1: Modern browser Clipboard API (primary method)
+    if (navigator.clipboard && navigator.clipboard.read) {
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        if (item.types.includes("text/html")) {
+          const htmlBlob = await item.getType("text/html");
+          return await htmlBlob.text();
+        }
+      }
+    }
+
+    // Method 2: Fallback to text read (HTML not available)
+    return await readFromClipboard();
+  } catch (error) {
+    console.error("Clipboard HTML read failed:", error);
+    return null;
+  }
 }
 
 /**
@@ -220,90 +347,118 @@ export async function copyMultipleToClipboard(
 }
 
 /**
- * Tauri v2 specific clipboard functions
- * These functions are optimized for Tauri v2 webview
+ * Image clipboard helpers (Tauri v2)
  */
 
 /**
- * Copy text using Tauri v2 clipboard-manager plugin
- * @param text - Text to copy
- * @returns Promise<boolean> - Success status
+ * Copy raw RGBA bytes to clipboard as image
+ * data must be RGBA byte array of length width * height * 4
  */
-export async function tauriCopyToClipboard(text: string): Promise<boolean> {
-  if (!isTauri) {
-    console.warn("tauriCopyToClipboard called outside Tauri environment");
-    return await copyToClipboard(text);
-  }
-
+export async function copyRgbaToClipboard(
+  data: Uint8Array,
+  width: number,
+  height: number
+): Promise<boolean> {
   try {
-    await writeText(text);
+    if (!data || width <= 0 || height <= 0) return false;
+    const img = await TauriImage.new(data, width, height);
+    await writeImage(img);
     return true;
   } catch (error) {
-    console.error("Tauri clipboard copy failed:", error);
+    console.error("Clipboard image (RGBA) copy failed:", error);
     return false;
   }
 }
 
 /**
- * Read text using Tauri v2 clipboard-manager plugin
- * @returns Promise<string> - Clipboard text content
+ * Copy HTMLCanvasElement content to clipboard as image
  */
-export async function tauriReadFromClipboard(): Promise<string> {
-  if (!isTauri) {
-    console.warn("tauriReadFromClipboard called outside Tauri environment");
-    return await readFromClipboard();
-  }
-
+export async function copyCanvasToClipboard(
+  canvas: HTMLCanvasElement
+): Promise<boolean> {
   try {
-    return await readText();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    const { width, height } = canvas;
+    const img = ctx.getImageData(0, 0, width, height);
+    // Copy into a Uint8Array (expected by TauriImage.new)
+    const data = new Uint8Array(img.data);
+    return await copyRgbaToClipboard(data, width, height);
   } catch (error) {
-    console.error("Tauri clipboard read failed:", error);
-    throw error;
+    console.error("Clipboard image (canvas) copy failed:", error);
+    return false;
   }
 }
 
 /**
- * Permission management functions
+ * Copy an <img> element to clipboard as image (draws to canvas first)
  */
-
-/**
- * Set clipboard permissions
- * @param permissions - New permissions configuration
- */
-export function setClipboardPermissions(
-  permissions: ClipboardPermissions
-): void {
-  clipboardPermissionValidator.updatePermissions(permissions);
+export async function copyImageElementToClipboard(
+  imgEl: HTMLImageElement
+): Promise<boolean> {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = imgEl.naturalWidth || imgEl.width;
+    canvas.height = imgEl.naturalHeight || imgEl.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    ctx.drawImage(imgEl, 0, 0);
+    return await copyCanvasToClipboard(canvas);
+  } catch (error) {
+    console.error("Clipboard image (<img>) copy failed:", error);
+    return false;
+  }
 }
 
 /**
- * Get current clipboard permissions
- * @returns Current permissions configuration
+ * Copy a Blob image (e.g., from fetch or file input) to clipboard
  */
-export function getClipboardPermissions(): ClipboardPermissions {
-  return clipboardPermissionValidator.getPermissions();
+export async function copyBlobImageToClipboard(blob: Blob): Promise<boolean> {
+  try {
+    const imgBitmap = await createImageBitmap(blob);
+    const canvas = document.createElement("canvas");
+    canvas.width = imgBitmap.width;
+    canvas.height = imgBitmap.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    ctx.drawImage(imgBitmap, 0, 0);
+    return await copyCanvasToClipboard(canvas);
+  } catch (error) {
+    console.error("Clipboard image (blob) copy failed:", error);
+    return false;
+  }
 }
 
 /**
- * Check if write text permission is granted
- * @returns boolean - Whether write text is allowed
+ * Read image from clipboard as DOM ImageData
+ * Returns null if there is no image in clipboard or platform doesn't support it
  */
-export function canWriteText(): boolean {
-  return clipboardPermissionValidator.canWriteText();
+export async function readImageFromClipboardAsImageData(): Promise<ImageData | null> {
+  try {
+    const img = await readImage();
+    if (!img) return null;
+    const [rgba, size] = await Promise.all([img.rgba(), img.size()]);
+    const clamped = new Uint8ClampedArray(rgba.buffer.slice(0));
+    return new ImageData(clamped, size.width, size.height);
+  } catch (error) {
+    console.error("Clipboard read image failed:", error);
+    return null;
+  }
 }
 
 /**
- * Check if read text permission is granted
- * @returns boolean - Whether read text is allowed
+ * Read image from clipboard and return a PNG data URL
  */
-export function canReadText(): boolean {
-  return clipboardPermissionValidator.canReadText();
-}
-
-/**
- * Check if clear clipboard permission is granted
- * @returns boolean - Whether clear operation is allowed
- */
-export function canClearClipboard(): boolean {
-  return clipboardPermissionValidator.canClear();
+export async function readImageFromClipboardAsDataUrl(): Promise<
+  string | null
+> {
+  const imageData = await readImageFromClipboardAsImageData();
+  if (!imageData) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = imageData.width;
+  canvas.height = imageData.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
 }

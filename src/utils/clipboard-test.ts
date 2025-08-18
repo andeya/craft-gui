@@ -9,10 +9,7 @@ import {
   isClipboardSupported,
   isClipboardReadSupported,
   clipboardPlatformInfo,
-  copyWithNotification,
   copyMultipleToClipboard,
-  tauriCopyToClipboard,
-  tauriReadFromClipboard,
 } from "./clipboard";
 
 /**
@@ -51,12 +48,12 @@ export async function testClipboardFunctionality() {
   console.log("Multiple copy result:", multipleResult);
 
   console.log("\n=== Testing Tauri v2 Specific Functions ===");
-  const tauriCopyResult = await tauriCopyToClipboard("Tauri v2 test text");
+  const tauriCopyResult = await copyToClipboard("Tauri v2 test text");
   console.log("Tauri copy result:", tauriCopyResult);
 
   if (isClipboardReadSupported()) {
     try {
-      const tauriReadText = await tauriReadFromClipboard();
+      const tauriReadText = await readFromClipboard();
       console.log("Tauri read text:", tauriReadText);
     } catch (error) {
       console.error("Tauri read failed:", error);
@@ -72,11 +69,13 @@ export async function testClipboardWithNotification(
 ) {
   const testText = "Test notification clipboard! " + new Date().toISOString();
 
-  await copyWithNotification(testText, {
-    successMessage: "Test copy successful!",
-    errorMessage: "Test copy failed!",
-    notify,
-  });
+  const success = await copyToClipboard(testText);
+
+  if (success) {
+    notify("positive", "Test copy successful!");
+  } else {
+    notify("negative", "Test copy failed!");
+  }
 }
 
 /**

@@ -1,27 +1,21 @@
 /**
  * Clipboard usage examples
- * Demonstrates how to use the Tauri v2 clipboard-manager plugin with permissions
+ * Demonstrates how to use the Tauri v2 clipboard-manager plugin
  */
 
 import {
   copyToClipboard,
   readFromClipboard,
-  copyWithNotification,
-  setClipboardPermissions,
-  getClipboardPermissions,
-  canWriteText,
-  canReadText,
-  canClearClipboard,
+  copyHtmlToClipboard,
+  copyElementAsHtml,
+  copyRichText,
+  readHtmlFromClipboard,
+  copyCanvasToClipboard,
+  copyImageElementToClipboard,
+  copyBlobImageToClipboard,
+  readImageFromClipboardAsImageData,
+  readImageFromClipboardAsDataUrl,
 } from "./clipboard";
-
-import {
-  clipboardPermissionValidator,
-  DEFAULT_CLIPBOARD_PERMISSIONS,
-  PERMISSIVE_CLIPBOARD_PERMISSIONS,
-  WRITE_ONLY_CLIPBOARD_PERMISSIONS,
-  READ_ONLY_CLIPBOARD_PERMISSIONS,
-  type ClipboardPermissions,
-} from "./clipboard-permissions";
 
 /**
  * Example 1: Basic clipboard operations
@@ -50,171 +44,200 @@ export async function clipboardWithNotificationsExample(
 ) {
   console.log("=== Clipboard with Notifications ===");
 
-  await copyWithNotification("Copied with notification!", {
-    successMessage: "Text copied successfully!",
-    errorMessage: "Failed to copy text",
-    notify,
+  const success = await copyToClipboard("Copied with notification!");
+
+  if (success) {
+    notify("positive", "Text copied successfully!");
+  } else {
+    notify("negative", "Failed to copy text");
+  }
+}
+
+/**
+ * Example 3: HTML clipboard operations
+ */
+export async function htmlClipboardExample() {
+  console.log("=== HTML Clipboard Operations ===");
+
+  // Copy HTML content
+  const htmlContent =
+    "<h1>Hello World</h1><p>This is <strong>bold</strong> text.</p>";
+  const htmlResult = await copyHtmlToClipboard(
+    htmlContent,
+    "Hello World - This is bold text."
+  );
+  console.log("HTML copy result:", htmlResult);
+
+  // Read HTML from clipboard
+  try {
+    const html = await readHtmlFromClipboard();
+    console.log("Read HTML:", html);
+  } catch (error) {
+    console.error("HTML read failed:", error);
+  }
+}
+
+/**
+ * Example 4: Copy DOM element as HTML
+ */
+export async function copyElementExample() {
+  console.log("=== Copy DOM Element ===");
+
+  // Create a test element
+  const testElement = document.createElement("div");
+  testElement.innerHTML = `
+    <h2>Test Element</h2>
+    <p style="color: blue;">This is a test paragraph with <em>emphasis</em>.</p>
+    <ul>
+      <li>Item 1</li>
+      <li>Item 2</li>
+    </ul>
+  `;
+
+  // Copy element with styles
+  const elementResult = await copyElementAsHtml(testElement, true);
+  console.log("Element copy result:", elementResult);
+}
+
+/**
+ * Example 5: Rich text formatting
+ */
+export async function richTextExample() {
+  console.log("=== Rich Text Formatting ===");
+
+  // Copy rich text with formatting
+  const richTextResult = await copyRichText("Hello World", {
+    bold: true,
+    italic: true,
+    color: "#ff0000",
+    fontSize: "18px",
+    fontFamily: "Arial, sans-serif",
   });
+  console.log("Rich text copy result:", richTextResult);
 }
 
 /**
- * Example 3: Permission management
+ * Example 6: Canvas to clipboard
  */
-export function permissionManagementExample() {
-  console.log("=== Permission Management ===");
+export async function canvasClipboardExample() {
+  console.log("=== Canvas to Clipboard ===");
 
-  // Get current permissions
-  const currentPermissions = getClipboardPermissions();
-  console.log("Current permissions:", currentPermissions);
+  // Create a test canvas
+  const canvas = document.createElement("canvas");
+  canvas.width = 200;
+  canvas.height = 100;
+  const ctx = canvas.getContext("2d");
 
-  // Check specific permissions
-  console.log("Can write text:", canWriteText());
-  console.log("Can read text:", canReadText());
-  console.log("Can clear clipboard:", canClearClipboard());
+  if (ctx) {
+    // Draw something on the canvas
+    ctx.fillStyle = "#4CAF50";
+    ctx.fillRect(0, 0, 200, 100);
+    ctx.fillStyle = "white";
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Canvas Test", 100, 60);
 
-  // Set restrictive permissions (write-only)
-  setClipboardPermissions(WRITE_ONLY_CLIPBOARD_PERMISSIONS);
-  console.log("After setting write-only permissions:");
-  console.log("Can write text:", canWriteText());
-  console.log("Can read text:", canReadText());
-
-  // Restore default permissions
-  setClipboardPermissions(DEFAULT_CLIPBOARD_PERMISSIONS);
+    // Copy canvas to clipboard
+    const canvasResult = await copyCanvasToClipboard(canvas);
+    console.log("Canvas copy result:", canvasResult);
+  }
 }
 
 /**
- * Example 4: Different permission configurations
+ * Example 7: Image element to clipboard
  */
-export function permissionConfigurationsExample() {
-  console.log("=== Permission Configurations ===");
+export async function imageElementClipboardExample() {
+  console.log("=== Image Element to Clipboard ===");
 
-  // Default permissions (text read/write only)
-  console.log("Default permissions:", DEFAULT_CLIPBOARD_PERMISSIONS);
+  // Create a test image element
+  const img = new Image();
+  img.crossOrigin = "anonymous";
 
-  // Permissive permissions (all operations allowed)
-  console.log("Permissive permissions:", PERMISSIVE_CLIPBOARD_PERMISSIONS);
-
-  // Write-only permissions
-  console.log("Write-only permissions:", WRITE_ONLY_CLIPBOARD_PERMISSIONS);
-
-  // Read-only permissions
-  console.log("Read-only permissions:", READ_ONLY_CLIPBOARD_PERMISSIONS);
-}
-
-/**
- * Example 5: Custom permission validator
- */
-export function customPermissionValidatorExample() {
-  console.log("=== Custom Permission Validator ===");
-
-  // Create custom permissions
-  const customPermissions: ClipboardPermissions = {
-    allowWriteText: true,
-    allowReadText: false,
-    allowWriteHtml: true,
-    allowWriteImage: false,
-    allowReadImage: false,
-    allowClear: true,
+  img.onload = async () => {
+    const imageResult = await copyImageElementToClipboard(img);
+    console.log("Image element copy result:", imageResult);
   };
 
-  // Create custom validator
-  const customValidator = new (clipboardPermissionValidator.constructor as any)(
-    customPermissions
-  );
+  img.onerror = () => {
+    console.log("Test image failed to load, skipping image element test");
+  };
 
-  console.log(
-    "Custom validator permissions:",
-    customValidator.getPermissions()
-  );
-  console.log("Can write text:", customValidator.canWriteText());
-  console.log("Can read text:", customValidator.canReadText());
-  console.log("Can write HTML:", customValidator.canWriteHtml());
-  console.log("Can clear:", customValidator.canClear());
+  // Use a simple data URL for testing
+  img.src =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzQyYz0zZiIvPgogIDx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=";
 }
 
 /**
- * Example 6: Error handling with permissions
+ * Example 8: Blob image to clipboard
  */
-export async function errorHandlingExample() {
-  console.log("=== Error Handling with Permissions ===");
+export async function blobImageClipboardExample() {
+  console.log("=== Blob Image to Clipboard ===");
 
-  // Set read-only permissions
-  setClipboardPermissions(READ_ONLY_CLIPBOARD_PERMISSIONS);
+  // Create a simple SVG blob
+  const svgString = `
+    <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#2196F3"/>
+      <text x="50" y="50" font-family="Arial" font-size="16" fill="white" text-anchor="middle">Blob</text>
+    </svg>
+  `;
 
-  // Try to write (should fail)
-  const writeResult = await copyToClipboard("This should fail");
-  console.log("Write result:", writeResult); // Should be false
+  const blob = new Blob([svgString], { type: "image/svg+xml" });
+  const blobResult = await copyBlobImageToClipboard(blob);
+  console.log("Blob image copy result:", blobResult);
+}
 
-  // Try to read (should succeed)
+/**
+ * Example 9: Read image from clipboard
+ */
+export async function readImageExample() {
+  console.log("=== Read Image from Clipboard ===");
+
   try {
-    const text = await readFromClipboard();
-    console.log("Read result:", text);
-  } catch (error) {
-    console.error("Read error:", error);
-  }
-
-  // Restore default permissions
-  setClipboardPermissions(DEFAULT_CLIPBOARD_PERMISSIONS);
-}
-
-/**
- * Example 7: Permission-aware clipboard operations
- */
-export async function permissionAwareOperationsExample() {
-  console.log("=== Permission-Aware Operations ===");
-
-  // Check permissions before operations
-  if (canWriteText()) {
-    console.log("Writing to clipboard...");
-    await copyToClipboard("Permission-aware copy");
-  } else {
-    console.log("Write permission denied");
-  }
-
-  if (canReadText()) {
-    console.log("Reading from clipboard...");
-    try {
-      const text = await readFromClipboard();
-      console.log("Read:", text);
-    } catch (error) {
-      console.error("Read failed:", error);
+    // Try to read image as ImageData
+    const imageData = await readImageFromClipboardAsImageData();
+    if (imageData) {
+      console.log("Image data:", {
+        width: imageData.width,
+        height: imageData.height,
+        dataLength: imageData.data.length,
+      });
+    } else {
+      console.log("No image data in clipboard");
     }
-  } else {
-    console.log("Read permission denied");
+
+    // Try to read image as data URL
+    const dataUrl = await readImageFromClipboardAsDataUrl();
+    if (dataUrl) {
+      console.log("Image data URL length:", dataUrl.length);
+    } else {
+      console.log("No image data URL in clipboard");
+    }
+  } catch (error) {
+    console.error("Image read failed:", error);
   }
 }
 
 /**
- * Example 8: Dynamic permission updates
+ * Example 10: Multiple clipboard operations
  */
-export async function dynamicPermissionUpdatesExample() {
-  console.log("=== Dynamic Permission Updates ===");
+export async function multipleOperationsExample() {
+  console.log("=== Multiple Clipboard Operations ===");
 
-  // Start with default permissions
-  setClipboardPermissions(DEFAULT_CLIPBOARD_PERMISSIONS);
-  console.log("Initial permissions:", getClipboardPermissions());
+  // Copy text
+  await copyToClipboard("Sample text content");
 
-  // Temporarily disable write
-  setClipboardPermissions({
-    ...DEFAULT_CLIPBOARD_PERMISSIONS,
-    allowWriteText: false,
-  });
-  console.log("After disabling write:", getClipboardPermissions());
+  // Wait a bit
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  // Try to write (should fail)
-  const writeResult = await copyToClipboard("This should fail");
-  console.log("Write result:", writeResult);
+  // Copy HTML
+  await copyHtmlToClipboard("<h1>Sample HTML</h1>", "Sample HTML");
 
-  // Re-enable write
-  setClipboardPermissions({
-    ...DEFAULT_CLIPBOARD_PERMISSIONS,
-    allowWriteText: true,
-  });
-  console.log("After re-enabling write:", getClipboardPermissions());
+  // Wait a bit
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-  // Try to write again (should succeed)
-  const writeResult2 = await copyToClipboard("This should succeed");
-  console.log("Write result 2:", writeResult2);
+  // Read back
+  const text = await readFromClipboard();
+  console.log("Final clipboard content:", text);
 }
 
 /**
@@ -233,22 +256,28 @@ export async function runAllExamples(
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
-  permissionManagementExample();
+  htmlClipboardExample();
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  permissionConfigurationsExample();
+  copyElementExample();
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  customPermissionValidatorExample();
+  richTextExample();
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  errorHandlingExample();
+  canvasClipboardExample();
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  permissionAwareOperationsExample();
+  imageElementClipboardExample();
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  dynamicPermissionUpdatesExample();
+  blobImageClipboardExample();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  readImageExample();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  multipleOperationsExample();
 
   console.log("\nAll examples completed!");
 }

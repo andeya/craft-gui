@@ -77,7 +77,7 @@
                       icon="content_copy"
                       size="sm"
                       color="grey-6"
-                      @click="copyToClipboard(path.value)"
+                      @click="copyPathToClipboard(path.value)"
                     >
                       <QTooltip>Copy path</QTooltip>
                     </QBtn>
@@ -152,7 +152,7 @@ import { ref, computed, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import { invoke } from "@tauri-apps/api/core";
 import { TAURI_COMMANDS } from "@/utils/tauri-commands";
-import { copyWithNotification } from "@/utils/clipboard";
+import { copyToClipboard } from "@/utils/clipboard";
 import type { PathResolver, PathCategory, Result } from "@/types/path-resolver";
 
 const $q = useQuasar();
@@ -194,20 +194,25 @@ const getPathValue = (path: Result<string, string>): string => {
 };
 
 // Copy path to clipboard
-const copyToClipboard = async (path: Result<string, string>) => {
+const copyPathToClipboard = async (path: Result<string, string>) => {
   const pathValue = getPathValue(path);
-  await copyWithNotification(pathValue, {
-    successMessage: "Path copied to clipboard",
-    errorMessage: "Failed to copy path",
-    notify: (type, message) => {
-      $q.notify({
-        type,
-        message,
-        position: "top",
-        timeout: 2000,
-      });
-    },
-  });
+  const success = await copyToClipboard(pathValue);
+
+  if (success) {
+    $q.notify({
+      type: "positive",
+      message: "Path copied to clipboard",
+      position: "top",
+      timeout: 2000,
+    });
+  } else {
+    $q.notify({
+      type: "negative",
+      message: "Failed to copy path",
+      position: "top",
+      timeout: 2000,
+    });
+  }
 };
 
 // Organize paths into categories
