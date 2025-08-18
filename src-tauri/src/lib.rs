@@ -40,6 +40,7 @@ pub fn run() {
       storage::appdata_cmd_remove_data,
       storage::appdata_cmd_exists_data,
       storage::appdata_cmd_find_next_available_key,
+      test::greet,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

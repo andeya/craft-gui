@@ -2,6 +2,12 @@ use reindeer::Entity;
 use reindeer::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
+// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+#[tauri::command]
+pub fn greet(name: &str) -> String {
+  format!("Hello {}! You've been greeted from Rust!", name)
+}
+
 // Simple test schema for demonstration
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[schemars(title = "User Profile", example=UserProfile::default())]
