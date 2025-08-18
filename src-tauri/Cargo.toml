@@ -54,3 +54,6 @@ panic = "abort"                              # Improve performance by disabling 
 strip = true                                 # Ensure debug symbols are removed.
 trim-paths = "all"                           # Remove potential privileged information from your binary.
 rustflags = ["-Cdebuginfo=0", "-Zthreads=8"] # Improve compilation performance.
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
