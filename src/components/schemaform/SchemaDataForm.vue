@@ -517,6 +517,14 @@ const schemaFieldInfos = computed(() => {
         schema.value!
       );
 
+      // Skip id fields with integer type to avoid duplication with currentDataKey
+      if (
+        resolvedInfo.fieldPath === "id" &&
+        resolvedSchema.type === "integer"
+      ) {
+        return;
+      }
+
       fieldInfos.push({
         key,
         schema: resolvedSchema,
@@ -861,6 +869,26 @@ const createNew = async () => {
     // Generate default values for new data using schema traversal
     if (schema.value) {
       const defaultData = initializeSchemaData(schema.value, schema.value, 10);
+
+      // Override id field value with currentDataKey if it exists and is integer type
+      if (schema.value.properties) {
+        Object.entries(schema.value.properties).forEach(([key, propSchema]) => {
+          const resolvedSchema = resolveSchemaRef(propSchema, schema.value!);
+          const resolvedInfo = fieldPathResolver.resolveFieldPath(
+            key,
+            "",
+            propSchema,
+            schema.value!
+          );
+
+          if (
+            resolvedInfo.fieldPath === "id" &&
+            resolvedSchema.type === "integer"
+          ) {
+            defaultData[key] = currentDataKey.value;
+          }
+        });
+      }
 
       // Print default data to console in JSON format
       debug.log("Data Form Create New - Default Data:");
