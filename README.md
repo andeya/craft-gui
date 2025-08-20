@@ -274,3 +274,32 @@ pnpm tauri android dev
 # For iOS development, run:
 pnpm tauri ios dev
 ```
+
+### Building for release
+
+To export the Next.js frontend via SSG and build the Tauri application for release.
+
+> Detail:
+>
+> - [distribute](https://tauri.app/distribute/)
+
+#### For Desktop release
+
+```shell
+pnpm tauri build
+```
+
+#### For Android release
+
+1. [sign](https://tauri.app/zh-cn/distribute/sign/android/)
+2. build
+
+```shell
+pnpm tauri android build
+```
+
+#### For iOS release
+
+```shell
+pnpm tauri ios build
+```
